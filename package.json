@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "axios": "^1.10.0",
+    "react-native-image-picker": "^8.2.1"
+  },
+  "devDependencies": {
+    "@react-native-community/cli": "^18.0.0"
+  }
+}

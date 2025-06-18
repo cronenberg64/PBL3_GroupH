@@ -7,5 +7,5 @@ from ai_model import identify_cat
 with open("cat_embeddings.pkl", "rb") as f:
     database_embeddings = pickle.load(f)
 
-result = identify_cat("./images/uploaded_cats/ryusei_4.png", database_embeddings)
+result = identify_cat("./images/uploaded_cats/ryusei_6.png", database_embeddings)
 print(result)
