@@ -15,6 +15,22 @@ if os.path.exists(EMBEDDING_FILE):
 else:
     db_embeddings = []
 
+# 仮の医療情報DB（本番はDB連携でもOK）
+medical_info_db = {
+    "cat_001": {
+        "name": "ミケ",
+        "gender": "female",
+        "vaccinated": True,
+        "last_visit": "2024-05-01"
+    },
+    "cat_002": {
+        "name": "タマ",
+        "gender": "male",
+        "vaccinated": False,
+        "last_visit": "2023-12-15"
+    }
+}
+
 @app.route("/", methods=["GET"])
 def upload_form():
     return '''
@@ -39,10 +55,15 @@ def identify_cat():
         cropped = preprocess_image(temp_path)
         embedding = get_embedding(cropped)
         result = match_embedding(embedding, db_embeddings)
+
+        # 医療情報を付加（存在する場合）
+        matched_id = result.get("matched_id")
+        if result["match_found"] and matched_id in medical_info_db:
+            result["medical_info"] = medical_info_db[matched_id]
+
         return jsonify(result)
     except Exception as e:
         return jsonify({'match_found': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
-    # スマホと同じWi-Fiに接続していること前提
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1,102 +1,101 @@
 import React, { useState } from 'react';
-import { View, Button, Image, Text, StyleSheet, ScrollView } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
+import { View, Text, Button, Image, StyleSheet, ActivityIndicator, ScrollView } from 'react-native';
 import axios from 'axios';
+import { launchCamera } from 'react-native-image-picker';
+
+const FLASK_API_URL = "http://172.31.202.213:5000/identify"; // ← あなたのFlaskサーバーURL
 
 export default function App() {
   const [photo, setPhoto] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
 
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Camera access is required.');
-      return;
-    }
+  const handleCamera = () => {
+    launchCamera({ mediaType: 'photo', cameraType: 'back' }, (response) => {
+      if (response.didCancel || response.errorCode) {
+        setError('Camera cancelled or failed');
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
+      const asset = response.assets[0];
+      setPhoto(asset);
+      uploadImage(asset);
     });
-
-    if (!result.canceled) {
-      setPhoto(result.assets[0]);
-      setResult(null);
-    }
   };
 
-  const identifyCat = async () => {
-    if (!photo) return;
-
-    const uriParts = photo.uri.split('.');
-    const fileType = uriParts[uriParts.length - 1];
+  const uploadImage = async (image) => {
+    setLoading(true);
+    setError(null);
+    setResult(null);
 
     const formData = new FormData();
     formData.append('image', {
-      uri: photo.uri,
-      name: `cat.${fileType}`,
-      type: `image/${fileType}`,
+      uri: image.uri,
+      type: image.type,
+      name: image.fileName || 'photo.jpg',
     });
 
     try {
-      const res = await axios.post('http://192.168.1.10:5000/identify', formData, {
+      const response = await axios.post(FLASK_API_URL, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-
-      if (res.data.match_found) {
-        setResult({
-          matched_id: `既知猫: ${res.data.matched_id}`,
-          score: `信頼度: ${res.data.score.toFixed(2)}`,
-          medical_info: res.data.medical_info,
-        });
-      } else {
-        setResult({
-          matched_id: '未登録猫です。',
-          score: `照合スコア: ${res.data.score.toFixed(2)}`,
-          medical_info: null,
-        });
-      }
+      setResult(response.data);
     } catch (err) {
-      setResult({ error: err.message });
+      setError('Failed to connect to server.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const renderResult = () => {
+    if (!result) return null;
+
+    return (
+      <View style={styles.resultBox}>
+        <Text style={styles.resultTitle}>
+          {result.match_found ? '✅ 既知猫（登録済み）' : '❌ 未登録の猫'}
+        </Text>
+        <Text>信頼度: {(result.score * 100).toFixed(2)}%</Text>
+
+        {result.medical_info && (
+          <View style={styles.infoBox}>
+            <Text>📋 医療情報:</Text>
+            <Text>名前: {result.medical_info.name}</Text>
+            <Text>性別: {result.medical_info.gender}</Text>
+            <Text>ワクチン: {result.medical_info.vaccinated ? '済み' : '未接種'}</Text>
+            <Text>最終受診日: {result.medical_info.last_visit}</Text>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
-    <View style={styles.container}>
-      <Button title="猫の写真を撮影" onPress={takePhoto} />
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>🐱 猫の再識別アプリ</Text>
+
+      <Button title="📷 猫を撮影" onPress={handleCamera} />
 
       {photo && (
-        <>
-          <Image source={{ uri: photo.uri }} style={styles.image} />
-          <Button title="照合する" onPress={identifyCat} />
-        </>
+        <Image source={{ uri: photo.uri }} style={styles.image} resizeMode="contain" />
       )}
 
-      {result && (
-        <ScrollView style={styles.result}>
-          <Text style={styles.resultText}>結果:</Text>
-          <Text style={styles.resultText}>{result.matched_id}</Text>
-          <Text style={styles.resultText}>{result.score}</Text>
-          {result.medical_info && (
-            <View style={styles.medicalInfo}>
-              <Text style={styles.resultText}>医療情報:</Text>
-              <Text style={styles.resultText}>登録番号: {result.medical_info.registration_number}</Text>
-              <Text style={styles.resultText}>ワクチン接種履歴: {result.medical_info.vaccine_history}</Text>
-              <Text style={styles.resultText}>性別: {result.medical_info.gender}</Text>
-            </View>
-          )}
-        </ScrollView>
-      )}
-    </View>
+      {loading && <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />}
+
+      {error && <Text style={styles.error}>{error}</Text>}
+
+      {renderResult()}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  image: { width: 300, height: 300, marginTop: 20, resizeMode: 'contain' },
-  result: { marginTop: 20, width: '100%' },
-  resultText: { fontSize: 16, marginBottom: 10, textAlign: 'center' },
-  medicalInfo: { marginTop: 20, padding: 10, backgroundColor: '#f0f0f0' },
+  container: { flexGrow: 1, alignItems: 'center', padding: 20 },
+  title: { fontSize: 24, marginBottom: 20 },
+  image: { width: 300, height: 300, marginTop: 20, borderRadius: 10 },
+  resultBox: { marginTop: 30, padding: 15, backgroundColor: '#e0f7fa', borderRadius: 10 },
+  resultTitle: { fontSize: 20, marginBottom: 10 },
+  infoBox: { marginTop: 10 },
+  error: { color: 'red', marginTop: 20 },
 });
