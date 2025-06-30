@@ -1,89 +1,31 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ScrollView } from 'react-native';
-import { Camera } from 'lucide-react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { Camera, Clock } from 'lucide-react-native';
 import CustomTabBar from '../../components/CustomTabBar';
 
-const styles = StyleSheet.create({
-  scroll: { padding: 24, paddingBottom: 48 },
-  logoContainer: { alignItems: 'center', marginBottom: 24 },
-  logo: { fontSize: 32, fontWeight: 'bold', letterSpacing: 2 },
-  accountCard: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    borderRadius: 12,
-    padding: 24,
-    marginBottom: 32,
-    backgroundColor: '#fff',
-    alignItems: 'flex-start',
-  },
-  accountTitle: { fontWeight: 'bold', fontSize: 18, color: '#222', marginBottom: 4 },
-  accountDesc: { color: '#9ca3af', fontSize: 15 },
-  identifyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fde68a',
-    borderRadius: 16,
-    paddingVertical: 24,
-    justifyContent: 'center',
-    marginBottom: 32,
-  },
-  identifyBtnText: { color: '#f59e0b', fontWeight: 'bold', fontSize: 20 },
-  historyCard: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    padding: 16,
-    marginBottom: 24,
-  },
-  historyTitle: { fontWeight: 'bold', fontSize: 18, color: '#222', marginBottom: 8 },
-  historyRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  historyImageBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  historyImage: { width: 32, height: 32, tintColor: '#d1d5db' },
-  historyFrame: { color: '#9ca3af', fontWeight: 'bold', fontSize: 14 },
-  historyMeta: { color: '#222', fontSize: 13, marginTop: 2 },
-  historyPercent: { color: '#222', fontSize: 18, fontWeight: 'bold', marginTop: 2 },
-});
-
-const logoText = (
-  <Text style={styles.logo}>
-    <Text style={{ color: '#22c55e' }}>か</Text>
-    <Text style={{ color: '#f43f5e' }}>る</Text>
-    <Text style={{ color: '#f59e42' }}>か</Text>
-    <Text style={{ color: '#f43f5e' }}>る</Text>
-    <Text style={{ color: '#facc15' }}>🐾</Text>
-  </Text>
-);
-
-const history = [
-  {
-    date: '20**/**/**',
-    location: 'Osaka, Ibaraki',
-    percent: null,
-    image: null,
-  },
-  {
-    date: '20**/**/**',
-    location: null,
-    percent: null,
-    image: null,
-  },
-];
-
 const HomeScreen = () => {
+  // Placeholder handlers for navigation
+  const handleStartIdentify = () => {
+    // To be implemented: navigate to identify page
+  };
+  const handleScanHistory = () => {
+    // To be implemented: navigate to scan history page
+  };
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 96 }]}>
+      <View style={styles.container}>
         {/* Logo */}
-        <View style={styles.logoContainer}>{logoText}</View>
+        <View style={styles.logoContainer}>
+          <Text style={styles.logoText}>
+            <Text style={{ color: '#22c55e' }}>か</Text>
+            <Text style={{ color: '#f43f5e' }}>る</Text>
+            <Text style={{ color: '#f59e42' }}>か</Text>
+            <Text style={{ color: '#f43f5e' }}>る</Text>
+            <Text> </Text>
+            <Text style={{ color: '#facc15', fontSize: 32 }}>🐾</Text>
+          </Text>
+        </View>
 
         {/* Account Card */}
         <View style={styles.accountCard}>
@@ -92,38 +34,80 @@ const HomeScreen = () => {
         </View>
 
         {/* Start Identify Button */}
-        <TouchableOpacity style={styles.identifyBtn}>
-          <Camera color="#f59e0b" size={24} style={{ marginRight: 12 }} />
-          <Text style={styles.identifyBtnText}>Start Identify</Text>
+        <TouchableOpacity style={styles.actionBtn} onPress={handleStartIdentify}>
+          <Camera color="#d97706" size={24} style={{ marginRight: 12 }} />
+          <Text style={styles.actionBtnText}>Start Identify</Text>
         </TouchableOpacity>
 
-        {/* History Section */}
-        <View style={styles.historyCard}>
-          <Text style={styles.historyTitle}>History</Text>
-          {history.map((item, idx) => (
-            <View key={idx} style={styles.historyRow}>
-              <View style={styles.historyImageBox}>
-                <Camera color="#d1d5db" size={32} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.historyFrame}>Frame</Text>
-                <Text style={styles.historyMeta}>
-                  Searched: {item.date}
-                  {item.location ? `   Location: ${item.location}` : ''}
-                </Text>
-                {item.percent !== null ? (
-                  <Text style={styles.historyPercent}>{item.percent}%</Text>
-                ) : (
-                  <Text style={styles.historyPercent}>___ %</Text>
-                )}
-              </View>
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+        {/* Scan History Button */}
+        <TouchableOpacity style={styles.actionBtn} onPress={handleScanHistory}>
+          <Clock color="#d97706" size={24} style={{ marginRight: 12 }} />
+          <Text style={styles.actionBtnText}>Scan History</Text>
+        </TouchableOpacity>
+      </View>
       <CustomTabBar />
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 24,
+    paddingBottom: 96,
+    backgroundColor: '#fff',
+  },
+  logoContainer: {
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 32,
+  },
+  logoText: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    letterSpacing: 2,
+  },
+  accountCard: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 40,
+    backgroundColor: '#fff',
+    alignItems: 'flex-start',
+    width: '100%',
+    maxWidth: 400,
+    minHeight: 180,
+    height: 200,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  accountTitle: { fontWeight: 'bold', fontSize: 18, color: '#444', marginBottom: 4 },
+  accountDesc: { color: '#bdbdbd', fontSize: 15 },
+  actionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fef3c7',
+    borderRadius: 16,
+    paddingVertical: 28,
+    paddingHorizontal: 24,
+    justifyContent: 'center',
+    marginBottom: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#facc15',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  actionBtnText: {
+    color: '#d97706',
+    fontWeight: 'bold',
+    fontSize: 20,
+  },
+});
 
 export default HomeScreen; 
