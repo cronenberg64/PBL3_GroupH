@@ -9,7 +9,7 @@ const CustomTabBar = () => {
 
   const tabs = [
     { name: 'Home', icon: Home, route: '/(tabs)' },
-    { name: 'Upload', icon: Camera, route: '/UploadScreen' },
+    { name: 'Upload', icon: Camera, route: '/TakePictureScreen' },
     { name: 'Settings', icon: MoreHorizontal, route: '/SettingsScreen' },
   ];
 
