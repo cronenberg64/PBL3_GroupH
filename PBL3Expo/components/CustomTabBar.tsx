@@ -18,7 +18,7 @@ const CustomTabBar = () => {
       {tabs.map(tab => {
         const Icon = tab.icon;
         const isActive =
-          (tab.route === '/(tabs)' && pathname === '/(tabs)') ||
+          (tab.route === '/(tabs)' && (pathname === '/(tabs)' || pathname === '/' || pathname === '/index')) ||
           (tab.route !== '/(tabs)' && pathname === tab.route);
         return (
           <TouchableOpacity
