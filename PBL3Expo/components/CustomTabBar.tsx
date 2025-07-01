@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
-import { Home, Camera, MoreHorizontal } from 'lucide-react-native';
+import { Home, Camera, User } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 
 const CustomTabBar = () => {
@@ -10,7 +10,7 @@ const CustomTabBar = () => {
   const tabs = [
     { name: 'Home', icon: Home, route: '/(tabs)' },
     { name: 'Upload', icon: Camera, route: '/TakePictureScreen' },
-    { name: 'Settings', icon: MoreHorizontal, route: '/SettingsScreen' },
+    { name: 'Settings', icon: User, route: '/SettingsScreen' },
   ];
 
   return (
