@@ -10,7 +10,7 @@ const HomeScreen = () => {
     // To be implemented: navigate to identify page
   };
   const handleScanHistory = () => {
-    router.push('ScanHistoryScreen');
+    router.push('/(tabs)/ScanHistoryScreen');
   };
 
   return (

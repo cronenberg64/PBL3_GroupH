@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity } from 'react-native';
 import { Search, X, Calendar, ChevronDown } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
+import CustomTabBar from '../../components/CustomTabBar';
 
 const ScanHistoryScreen = () => {
   return (
@@ -54,6 +55,7 @@ const ScanHistoryScreen = () => {
           <Text style={styles.noHistoryDesc}>Haven't Scanned Yet.{"\n"}Start Your First Scan !</Text>
         </View>
       </View>
+      <CustomTabBar />
     </SafeAreaView>
   );
 };
