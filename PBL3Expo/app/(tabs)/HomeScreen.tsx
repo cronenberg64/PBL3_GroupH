@@ -2,14 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Camera, Clock } from 'lucide-react-native';
 import CustomTabBar from '../../components/CustomTabBar';
+import { useRouter } from 'expo-router';
 
 const HomeScreen = () => {
-  // Placeholder handlers for navigation
+  const router = useRouter();
   const handleStartIdentify = () => {
     // To be implemented: navigate to identify page
   };
   const handleScanHistory = () => {
-    // To be implemented: navigate to scan history page
+    router.push('ScanHistoryScreen');
   };
 
   return (
