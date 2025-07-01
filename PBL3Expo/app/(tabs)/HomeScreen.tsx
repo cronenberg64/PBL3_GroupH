@@ -2,14 +2,15 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Camera, Clock } from 'lucide-react-native';
 import CustomTabBar from '../../components/CustomTabBar';
+import { useRouter } from 'expo-router';
 
 const HomeScreen = () => {
-  // Placeholder handlers for navigation
+  const router = useRouter();
   const handleStartIdentify = () => {
     // To be implemented: navigate to identify page
   };
   const handleScanHistory = () => {
-    // To be implemented: navigate to scan history page
+    router.push('/(tabs)/ScanHistoryScreen');
   };
 
   return (
@@ -40,7 +41,7 @@ const HomeScreen = () => {
         </TouchableOpacity>
 
         {/* Scan History Button */}
-        <TouchableOpacity style={styles.actionBtn} onPress={handleScanHistory}>
+        <TouchableOpacity style={[styles.actionBtn, styles.scanHistoryBtn]} onPress={handleScanHistory}>
           <Clock color="#d97706" size={24} style={{ marginRight: 12 }} />
           <Text style={styles.actionBtnText}>Scan History</Text>
         </TouchableOpacity>
@@ -102,6 +103,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 2 },
+  },
+  scanHistoryBtn: {
+    backgroundColor: '#edfff4',
+    shadowColor: '#22c55e',
   },
   actionBtnText: {
     color: '#d97706',

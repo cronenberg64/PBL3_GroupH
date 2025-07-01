@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
-import { Home, Camera, MoreHorizontal } from 'lucide-react-native';
+import { Home, Camera, Settings } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 
 const CustomTabBar = () => {
@@ -10,7 +10,7 @@ const CustomTabBar = () => {
   const tabs = [
     { name: 'Home', icon: Home, route: '/(tabs)' },
     { name: 'Upload', icon: Camera, route: '/TakePictureScreen' },
-    { name: 'Settings', icon: MoreHorizontal, route: '/SettingsScreen' },
+    { name: 'Settings', icon: Settings, route: '/SettingsScreen' },
   ];
 
   return (
@@ -18,7 +18,7 @@ const CustomTabBar = () => {
       {tabs.map(tab => {
         const Icon = tab.icon;
         const isActive =
-          (tab.route === '/(tabs)' && pathname === '/(tabs)') ||
+          (tab.route === '/(tabs)' && (pathname === '/(tabs)' || pathname === '/' || pathname === '/index')) ||
           (tab.route !== '/(tabs)' && pathname === tab.route);
         return (
           <TouchableOpacity
