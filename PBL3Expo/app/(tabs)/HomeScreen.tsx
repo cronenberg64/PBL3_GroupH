@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
-import { Camera, Clock } from 'lucide-react-native';
+import { Camera, Clock, HelpCircle } from 'lucide-react-native';
 import CustomTabBar from '../../components/CustomTabBar';
 import { useRouter } from 'expo-router';
 
@@ -46,6 +46,10 @@ const HomeScreen = () => {
           <Text style={styles.actionBtnText}>Scan History</Text>
         </TouchableOpacity>
       </View>
+      {/* Report Button */}
+      <TouchableOpacity style={styles.reportBtn} onPress={() => { /* TODO: Implement report action */ }}>
+        <HelpCircle color="#d97706" size={34} />
+      </TouchableOpacity>
       <CustomTabBar />
     </SafeAreaView>
   );
@@ -112,6 +116,24 @@ const styles = StyleSheet.create({
     color: '#d97706',
     fontWeight: 'bold',
     fontSize: 20,
+  },
+  reportBtn: {
+    position: 'absolute',
+    bottom: 96,
+    right: 32,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#fff',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#facc15',
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    zIndex: 200,
   },
 });
 
