@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, Platform, ScrollView, Image, KeyboardAvoidingView } from 'react-native';
 import { Upload, Send } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as MailComposer from 'expo-mail-composer';
+import CustomTabBar from '../../components/CustomTabBar';
 
 const problemTypes = ['Bug', 'Suggestion', 'Other'];
 
@@ -24,85 +26,120 @@ const ReportScreen = () => {
     }
   };
 
-  const handleSendReport = () => {
-    // TODO: Implement send report logic
+  const handleSendReport = async () => {
+    if (!title || !details || !email) {
+      alert('Please fill in all fields.');
+      return;
+    }
+
+    const options: MailComposer.MailComposerOptions = {
+      recipients: ['placeholder@example.com'], // Replace with your desired email
+      subject: `[${problem}] ${title}`,
+      body: `Details:\n${details}\n\nEmail: ${email}`,
+      attachments: attachment ? [attachment] : [],
+    };
+
+    try {
+      await MailComposer.composeAsync(options);
+    } catch (e) {
+      alert('Could not open mail composer.');
+    }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fafafa' }}>
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Report</Text>
+    <View style={{ flex: 1, backgroundColor: '#fafafa' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 24}
+      >
+        <SafeAreaView style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+            <Text style={styles.title}>Report</Text>
 
-        {/* Problem Type */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>What is the problem?</Text>
-          {problemTypes.map((type) => (
-            <TouchableOpacity
-              key={type}
-              style={styles.radioRow}
-              onPress={() => setProblem(type)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.radioOuter, problem === type && styles.radioOuterActive]}>
-                {problem === type && <View style={styles.radioInner} />}
+            {/* Problem Type */}
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>What is the problem?</Text>
+              {problemTypes.map((type) => (
+                <TouchableOpacity
+                  key={type}
+                  style={styles.radioRow}
+                  onPress={() => setProblem(type)}
+                  activeOpacity={0.7}
+                >
+                  <View style={[styles.radioOuter, problem === type && styles.radioOuterActive]}>
+                    {problem === type && <View style={styles.radioInner} />}
+                  </View>
+                  <Text style={styles.radioLabel}>{type}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Form Fields */}
+            <View style={styles.card}>
+              <Text style={styles.label}>Title</Text>
+              <TextInput
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Title"
+                placeholderTextColor="#bdbdbd"
+              />
+              <Text style={styles.label}>Details</Text>
+              <TextInput
+                style={[styles.input, { height: 60 }]}
+                value={details}
+                onChangeText={setDetails}
+                placeholder="Description"
+                placeholderTextColor="#bdbdbd"
+                multiline
+              />
+
+              {/* Attachment */}
+              <Text style={[styles.label, { marginTop: 16 }]}>Attachment</Text>
+              <View style={[styles.attachmentBox, attachment ? styles.attachmentBoxWithImage : null]}>
+                {!attachment ? (
+                  <TouchableOpacity style={styles.attachmentBtn} onPress={handlePickAttachment}>
+                    <Upload color="#bdbdbd" size={22} style={{ marginRight: 8 }} />
+                    <Text style={styles.attachmentBtnText}>Choose from album</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.attachmentImageWrapper}>
+                    <Image
+                      source={{ uri: attachment }}
+                      style={styles.attachmentImage}
+                      resizeMode="contain"
+                    />
+                    <TouchableOpacity style={styles.changeBtn} onPress={handlePickAttachment}>
+                      <Text style={styles.changeBtnText}>Change</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
-              <Text style={styles.radioLabel}>{type}</Text>
+
+              {/* Email */}
+              <Text style={[styles.label, { marginTop: 16 }]}>Email Address</Text>
+              <TextInput
+                style={styles.input}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="example@email.com"
+                placeholderTextColor="#bdbdbd"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Send Button */}
+            <TouchableOpacity style={styles.sendBtn} onPress={handleSendReport}>
+              <Send color="#222" size={28} style={{ marginRight: 12 }} />
+              <Text style={styles.sendBtnText}>Send Report</Text>
             </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Form Fields */}
-        <View style={styles.card}>
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Title"
-            placeholderTextColor="#bdbdbd"
-          />
-          <Text style={styles.label}>Details</Text>
-          <TextInput
-            style={[styles.input, { height: 60 }]}
-            value={details}
-            onChangeText={setDetails}
-            placeholder="Description"
-            placeholderTextColor="#bdbdbd"
-            multiline
-          />
-
-          {/* Attachment */}
-          <Text style={[styles.label, { marginTop: 16 }]}>Attachment</Text>
-          <View style={styles.attachmentBox}>
-            <TouchableOpacity style={styles.attachmentBtn} onPress={handlePickAttachment}>
-              <Upload color="#bdbdbd" size={22} style={{ marginRight: 8 }} />
-              <Text style={styles.attachmentBtnText}>Choose from album</Text>
-            </TouchableOpacity>
-            {attachment && (
-              <Image source={{ uri: attachment }} style={styles.attachmentThumb} />
-            )}
-          </View>
-
-          {/* Email */}
-          <Text style={[styles.label, { marginTop: 16 }]}>Email Address</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="example@email.com"
-            placeholderTextColor="#bdbdbd"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        {/* Send Button */}
-        <TouchableOpacity style={styles.sendBtn} onPress={handleSendReport}>
-          <Send color="#222" size={28} style={{ marginRight: 12 }} />
-          <Text style={styles.sendBtnText}>Send Report</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+          </ScrollView>
+        </SafeAreaView>
+      </KeyboardAvoidingView>
+      <CustomTabBar />
+    </View>
   );
 };
 
@@ -117,6 +154,7 @@ const styles = StyleSheet.create({
     color: '#222',
     marginBottom: 24,
     marginTop: 8,
+    textAlign: 'center',
   },
   card: {
     width: '100%',
@@ -189,9 +227,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
     alignItems: 'center',
     justifyContent: 'center',
-    height: 100,
+    minHeight: 100,
+    width: '100%',
+    maxHeight: 220,
     marginTop: 8,
-    padding: 8,
+    padding: 16,
+  },
+  attachmentBoxWithImage: {
+    borderStyle: 'solid',
+    minHeight: 120,
+    width: '100%',
+    maxHeight: 220,
+    padding: 16,
   },
   attachmentBtn: {
     flexDirection: 'row',
@@ -206,11 +253,28 @@ const styles = StyleSheet.create({
     color: '#bdbdbd',
     fontSize: 15,
   },
-  attachmentThumb: {
-    width: 60,
-    height: 60,
+  attachmentImageWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attachmentImage: {
+    width: '100%',
+    height: 180,
+    maxWidth: '100%',
+    maxHeight: 180,
     borderRadius: 8,
+  },
+  changeBtn: {
     marginTop: 8,
+    backgroundColor: '#ededed',
+    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  changeBtnText: {
+    color: '#bdbdbd',
+    fontSize: 14,
   },
   sendBtn: {
     flexDirection: 'row',
