@@ -12,6 +12,9 @@ const HomeScreen = () => {
   const handleScanHistory = () => {
     router.push('/(tabs)/ScanHistoryScreen');
   };
+  const handleReport = () => {
+    router.push('/(tabs)/ReportScreen');
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -47,7 +50,7 @@ const HomeScreen = () => {
         </TouchableOpacity>
       </View>
       {/* Report Button */}
-      <TouchableOpacity style={styles.reportBtn} onPress={() => { /* TODO: Implement report action */ }}>
+      <TouchableOpacity style={styles.reportBtn} onPress={handleReport}>
         <HelpCircle color="#d97706" size={34} />
       </TouchableOpacity>
       <CustomTabBar />
