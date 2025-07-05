@@ -32,8 +32,8 @@ const ReportScreen = () => {
       return;
     }
 
-    const options: MailComposer.MailComposerOptions = {
-      recipients: ['placeholder@example.com'], // Replace with your desired email
+    const options = {
+      recipients: ['cn.huang.school@gmail.com'],
       subject: `[${problem}] ${title}`,
       body: `Details:\n${details}\n\nEmail: ${email}`,
       attachments: attachment ? [attachment] : [],
