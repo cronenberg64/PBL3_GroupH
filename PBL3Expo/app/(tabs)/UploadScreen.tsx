@@ -8,7 +8,7 @@ import { API_CONFIG } from '../../config/api';
 import { getEmbedding } from '../../utils/model';
 import { findBestMatch, saveEmbedding } from '../../utils/embedding';
 import * as ImageManipulator from 'expo-image-manipulator';
-import { base64ToFloat32Array } from '../../utils/imageUtils';
+import { preprocessImageForEmbedding, getImageRGBData } from '../../utils/imageUtils';
 
 const UploadScreen = () => {
   const router = useRouter();
@@ -39,16 +39,13 @@ const UploadScreen = () => {
     if (!image) return;
     setLoading(true);
     try {
-      // Preprocess image: resize to 224x224 and get base64
-      const manipResult = await ImageManipulator.manipulateAsync(
-        image,
-        [{ resize: { width: 224, height: 224 } }],
-        { base64: true }
-      );
-      // Convert base64 to Float32Array (implement this helper)
-      const imageTensor = await base64ToFloat32Array(manipResult.base64);
-      const embedding = await getEmbedding(imageTensor);
-      const match = await findBestMatch(Array.from(embedding));
+      // Preprocess image: resize, convert to JPEG, get base64
+      const base64 = await preprocessImageForEmbedding(image);
+      // Extract RGB data
+      const rgbArray = getImageRGBData(base64);
+      // Compute mean RGB embedding
+      const embedding = getEmbedding(rgbArray);
+      const match = await findBestMatch(embedding);
       setLoading(false);
       router.push({ pathname: '/(tabs)/ResultScreen', params: { result: JSON.stringify(match), image } });
     } catch (e) {

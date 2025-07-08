@@ -1,6 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+
+function getConfidenceLabel(score: number) {
+  if (score >= 0.8) return 'Very Likely Match';
+  if (score >= 0.6) return 'Possible Match – Needs Confirmation';
+  return 'No reliable match';
+}
+
+function toPercent(score: number) {
+  // Clamp and convert to 0-100%
+  return Math.round(Math.max(0, Math.min(1, score)) * 100);
+}
 
 const ResultScreen = () => {
   const router = useRouter();
@@ -10,6 +21,20 @@ const ResultScreen = () => {
 
   const handleBack = () => {
     router.replace('/(tabs)');
+  };
+
+  const handleViewProfile = () => {
+    // TODO: Implement navigation to profile
+  };
+
+  const handleConfirm = () => {
+    Alert.alert('Confirmed', 'You have confirmed this match.');
+  };
+  const handleReject = () => {
+    Alert.alert('Rejected', 'You have rejected this match.');
+  };
+  const handleReport = () => {
+    Alert.alert('Reported', 'You have reported this match.');
   };
 
   if (!result) {
@@ -23,46 +48,89 @@ const ResultScreen = () => {
     );
   }
 
+  // Assume result.score is similarity (0-1), higher is better
+  const confidence = result.score !== undefined ? toPercent(result.score) : 0;
+  const label = getConfidenceLabel(confidence / 100);
+  const isHigh = confidence >= 80;
+  const isModerate = confidence >= 60 && confidence < 80;
+  const isLow = confidence < 60;
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Cat Re-Identification Result</Text>
-      {image && <Image source={{ uri: image }} style={styles.image} />}
-      <View style={styles.resultBox}>
-        <Text style={styles.resultTitle}>
-          {result.match_found ? '✅ Match Found' : '❌ No Match'}
-        </Text>
-        <Text style={styles.score}>Score: {result.score ? result.score.toFixed(4) : 'N/A'}</Text>
-        {result.matched_id && <Text style={styles.catId}>Cat ID: {result.matched_id}</Text>}
-        {result.medical_info && (
-          <View style={styles.infoBox}>
-            <Text style={styles.infoTitle}>Medical Info:</Text>
-            <Text>Name: {result.medical_info.name}</Text>
-            <Text>Gender: {result.medical_info.gender}</Text>
-            <Text>Vaccinated: {result.medical_info.vaccinated ? 'Yes' : 'No'}</Text>
-            <Text>Last Visit: {result.medical_info.last_visit}</Text>
+    <View style={styles.page}>
+      <View style={styles.headerRow}>
+        <TouchableOpacity onPress={handleBack} style={styles.backIcon}>
+          <Text style={{ fontSize: 24, color: '#bfa14a' }}>{'<'}</Text>
+        </TouchableOpacity>
+        <Text style={styles.header}>Result</Text>
+      </View>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.confidence}>{confidence}%</Text>
+        <Text style={styles.confidenceLabel}>{label}</Text>
+        <View style={styles.card}>
+          {image ? (
+            <Image source={{ uri: image }} style={styles.catImage} />
+          ) : (
+            <View style={[styles.catImage, styles.placeholderImg]} />
+          )}
+          <Text style={styles.catId}>{result.id ? result.id : 'Cat ID'}</Text>
+          <Text style={styles.info}>{result.info ? result.info : 'Information'}</Text>
+        </View>
+        {isHigh && (
+          <TouchableOpacity style={styles.profileBtn} onPress={handleViewProfile}>
+            <Text style={styles.profileBtnText}>View Profile</Text>
+          </TouchableOpacity>
+        )}
+        {isModerate && (
+          <View style={styles.actionRow}>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleConfirm}>
+              <Text style={styles.actionBtnText}>Confirm</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleReject}>
+              <Text style={styles.actionBtnText}>Reject</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleReport}>
+              <Text style={styles.actionBtnText}>Report</Text>
+            </TouchableOpacity>
           </View>
         )}
-        {result.error && <Text style={styles.error}>Error: {result.error}</Text>}
+        {isLow && (
+          <TouchableOpacity style={styles.actionBtn} onPress={handleReport}>
+            <Text style={styles.actionBtnText}>Report False Re-ID</Text>
+          </TouchableOpacity>
+        )}
+      </ScrollView>
+      {/* Bottom nav bar placeholder */}
+      <View style={styles.bottomBar}>
+        <Text style={styles.bottomIcon}>🏠</Text>
+        <View style={styles.bottomCircle} />
+        <Text style={styles.bottomIcon}>?</Text>
       </View>
-      <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-        <Text style={styles.backBtnText}>Back to Home</Text>
-      </TouchableOpacity>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#fff' },
+  page: { flex: 1, backgroundColor: '#fafafa' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', paddingTop: 32, paddingBottom: 8, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
+  backIcon: { paddingHorizontal: 16 },
+  header: { fontSize: 18, color: '#aaa', fontWeight: '600', marginLeft: 0 },
+  container: { alignItems: 'center', padding: 24 },
+  confidence: { fontSize: 48, color: '#bfa14a', fontWeight: 'bold', marginTop: 24 },
+  confidenceLabel: { color: '#bfa14a', fontSize: 16, marginBottom: 24 },
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 24, width: 240, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  catImage: { width: 140, height: 140, borderRadius: 8, backgroundColor: '#eee', marginBottom: 12 },
+  placeholderImg: { justifyContent: 'center', alignItems: 'center' },
+  catId: { fontSize: 16, fontWeight: 'bold', marginBottom: 4 },
+  info: { fontSize: 14, color: '#888' },
+  profileBtn: { backgroundColor: '#eab308', borderRadius: 8, paddingVertical: 16, alignItems: 'center', width: 220, marginTop: 8 },
+  profileBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  actionRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 12 },
+  actionBtn: { backgroundColor: '#eab308', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', marginHorizontal: 6 },
+  actionBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
+  bottomBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 32, paddingBottom: 24, paddingTop: 8 },
+  bottomIcon: { fontSize: 24, color: '#bfa14a' },
+  bottomCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#eab308', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  title: { fontSize: 22, fontWeight: 'bold', color: '#222', marginBottom: 24 },
-  image: { width: 220, height: 220, borderRadius: 24, marginBottom: 24, backgroundColor: '#f3f4f6' },
-  resultBox: { backgroundColor: '#f3f4f6', borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 24, width: '100%' },
-  resultTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
-  score: { fontSize: 16, marginBottom: 4 },
-  catId: { fontSize: 16, marginBottom: 8 },
-  infoBox: { marginTop: 12, backgroundColor: '#fff', borderRadius: 12, padding: 12, width: '100%' },
-  infoTitle: { fontWeight: 'bold', marginBottom: 4 },
-  error: { color: '#ef4444', marginTop: 8 },
   backBtn: { backgroundColor: '#facc15', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32, alignItems: 'center', marginTop: 24 },
   backBtnText: { color: '#222', fontWeight: 'bold', fontSize: 16 },
 });

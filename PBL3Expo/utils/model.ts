@@ -1,29 +1,11 @@
-import { InferenceSession, Tensor } from 'onnxruntime-react-native';
-import * as FileSystem from 'expo-file-system';
-import { Asset } from 'expo-asset';
-import { Platform } from 'react-native';
-
-let session: InferenceSession | null = null;
-
-export async function loadModel() {
-  if (session) return session;
-  // Load the ONNX model from the app bundle
-  const modelAsset = Asset.fromModule(require('../assets/model/cat_identifier.onnx'));
-  await modelAsset.downloadAsync();
-  let modelUri = modelAsset.localUri || modelAsset.uri;
-  if (Platform.OS === 'android' && modelUri.startsWith('file://')) {
-    modelUri = modelUri.replace('file://', '');
+// Returns the mean RGB embedding from a 224x224 RGB image array (Uint8ClampedArray or number[])
+export function getEmbedding(imageData: Uint8ClampedArray | number[]): number[] {
+  let r = 0, g = 0, b = 0;
+  const n = 224 * 224;
+  for (let i = 0; i < n; i++) {
+    r += imageData[i * 3];
+    g += imageData[i * 3 + 1];
+    b += imageData[i * 3 + 2];
   }
-  session = await InferenceSession.create(modelUri);
-  return session;
-}
-
-// imageTensor: Float32Array or Tensor of shape [1, 3, 224, 224]
-export async function getEmbedding(imageTensor: Float32Array) {
-  const sess = await loadModel();
-  const input = new Tensor('float32', imageTensor, [1, 3, 224, 224]);
-  const output = await sess.run({ input });
-  // Assume output is the first key
-  const embedding = Object.values(output)[0].data as Float32Array;
-  return embedding;
+  return [r / n / 255, g / n / 255, b / n / 255];
 } 
