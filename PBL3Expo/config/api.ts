@@ -1,8 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  // Change this to your computer's IP address on the same WiFi network
-  // You can find your IP by running 'ifconfig' on Mac/Linux or 'ipconfig' on Windows
-  BASE_URL: 'http://192.168.1.100:5000',
+  BASE_URL: 'https://wide-night-light-taught.trycloudflare.com',
   
   // API endpoints
   ENDPOINTS: {
