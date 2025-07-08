@@ -31,32 +31,9 @@ const UploadScreen = () => {
     }
   };
 
-  const handleUpload = async () => {
+  const handleUpload = () => {
     if (!image) return;
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('image', {
-        uri: image,
-        type: 'image/jpeg',
-        name: 'cat.jpg',
-      } as any);
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.IDENTIFY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'multipart/form-data' },
-        body: formData,
-      });
-      const result = await response.json();
-      setLoading(false);
-      if (response.ok) {
-        router.push({ pathname: '/(tabs)/ResultScreen', params: { result: JSON.stringify(result), image } });
-      } else {
-        Alert.alert('Error', result.error || 'Failed to identify cat.');
-      }
-    } catch (e) {
-      setLoading(false);
-      Alert.alert('Error', 'Failed to connect to server.');
-    }
+    router.push({ pathname: '/(tabs)/LoadingScreen', params: { image } });
   };
 
   const handleCancel = () => {
@@ -90,7 +67,7 @@ const UploadScreen = () => {
             <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
         </View>
-        {loading && <ActivityIndicator size="large" color="#f59e0b" style={{ marginTop: 24 }} />}
+        {/* Loading indicator removed; handled by LoadingScreen */}
       </View>
       <CustomTabBar />
     </SafeAreaView>
