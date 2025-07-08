@@ -5,6 +5,10 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import CustomTabBar from '../../components/CustomTabBar';
 import { API_CONFIG } from '../../config/api';
+import { getEmbedding } from '../../utils/model';
+import { findBestMatch, saveEmbedding } from '../../utils/embedding';
+import * as ImageManipulator from 'expo-image-manipulator';
+import { base64ToFloat32Array } from '../../utils/imageUtils';
 
 const UploadScreen = () => {
   const router = useRouter();
@@ -31,9 +35,26 @@ const UploadScreen = () => {
     }
   };
 
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (!image) return;
-    router.push({ pathname: '/(tabs)/LoadingScreen', params: { image } });
+    setLoading(true);
+    try {
+      // Preprocess image: resize to 224x224 and get base64
+      const manipResult = await ImageManipulator.manipulateAsync(
+        image,
+        [{ resize: { width: 224, height: 224 } }],
+        { base64: true }
+      );
+      // Convert base64 to Float32Array (implement this helper)
+      const imageTensor = await base64ToFloat32Array(manipResult.base64);
+      const embedding = await getEmbedding(imageTensor);
+      const match = await findBestMatch(Array.from(embedding));
+      setLoading(false);
+      router.push({ pathname: '/(tabs)/ResultScreen', params: { result: JSON.stringify(match), image } });
+    } catch (e) {
+      setLoading(false);
+      Alert.alert('Error', 'Failed to process image.');
+    }
   };
 
   const handleCancel = () => {
