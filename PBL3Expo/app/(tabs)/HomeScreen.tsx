@@ -7,7 +7,7 @@ import { useRouter } from 'expo-router';
 const HomeScreen = () => {
   const router = useRouter();
   const handleStartIdentify = () => {
-    // To be implemented: navigate to identify page
+    router.push('/(tabs)/UploadScreen');
   };
   const handleScanHistory = () => {
     router.push('/(tabs)/ScanHistoryScreen');

@@ -1,25 +1,44 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { Camera } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import CustomTabBar from '../../components/CustomTabBar';
+import { API_CONFIG } from '../../config/api';
 
 const UploadScreen = () => {
   const router = useRouter();
   const [image, setImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Placeholder for image picker/camera logic
-  const handlePickImage = () => {
-    // TODO: Integrate with expo-image-picker or camera
-    setImage('https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=300&h=300&fit=crop');
+  const handlePickImage = async () => {
+    // Ask for permission
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Camera permission is required!');
+      return;
+    }
+    // Show options: Take photo or pick from gallery
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      setImage(result.assets[0].uri);
+    }
   };
 
   const handleUpload = () => {
-    if (image) {
-      // TODO: Upload image to backend
-      // For now, just navigate back to home
-      router.replace('/(tabs)');
-    }
+    if (!image) return;
+    router.push({ pathname: '/(tabs)/LoadingScreen', params: { image } });
+  };
+
+  const handleCancel = () => {
+    setImage(null);
+    router.replace('/(tabs)'); // Go back to main home page
   };
 
   return (
@@ -36,11 +55,19 @@ const UploadScreen = () => {
         <TouchableOpacity style={styles.uploadBtn} onPress={handlePickImage}>
           <Text style={styles.uploadBtnText}>{image ? 'Change Photo' : 'Select Photo'}</Text>
         </TouchableOpacity>
-        {image && (
-          <TouchableOpacity style={styles.submitBtn} onPress={handleUpload}>
-            <Text style={styles.submitBtnText}>Upload & Identify</Text>
+        <View style={styles.buttonGroup}>
+          <TouchableOpacity
+            style={styles.confirmBtn}
+            onPress={handleUpload}
+            disabled={!image || loading}
+          >
+            <Text style={styles.confirmBtnText}>Confirm</Text>
           </TouchableOpacity>
-        )}
+          <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} disabled={loading}>
+            <Text style={styles.cancelBtnText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+        {/* Loading indicator removed; handled by LoadingScreen */}
       </View>
       <CustomTabBar />
     </SafeAreaView>
@@ -54,8 +81,11 @@ const styles = StyleSheet.create({
   image: { width: 180, height: 180, borderRadius: 24 },
   uploadBtn: { backgroundColor: '#facc15', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32, alignItems: 'center', marginBottom: 16 },
   uploadBtnText: { color: '#222', fontWeight: 'bold', fontSize: 16 },
-  submitBtn: { backgroundColor: '#2563eb', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32, alignItems: 'center' },
-  submitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  buttonGroup: { width: '100%', marginTop: 32, alignItems: 'center' },
+  confirmBtn: { backgroundColor: '#fde68a', borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginBottom: 12, width: '70%' },
+  confirmBtnText: { color: '#b45309', fontWeight: 'bold', fontSize: 16 },
+  cancelBtn: { backgroundColor: '#fde68a', borderRadius: 16, paddingVertical: 14, alignItems: 'center', width: '70%' },
+  cancelBtnText: { color: '#b45309', fontWeight: 'bold', fontSize: 16 },
 });
 
 export default UploadScreen; 

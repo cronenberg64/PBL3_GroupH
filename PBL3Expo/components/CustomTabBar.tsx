@@ -9,7 +9,7 @@ const CustomTabBar = () => {
 
   const tabs = [
     { name: 'Home', icon: Home, route: '/(tabs)' },
-    { name: 'Upload', icon: Camera, route: '/TakePictureScreen' },
+    { name: 'Upload', icon: Camera, route: '/(tabs)/UploadScreen' },
     { name: 'Settings', icon: Settings, route: '/SettingsScreen' },
   ];
 
@@ -19,7 +19,8 @@ const CustomTabBar = () => {
         const Icon = tab.icon;
         const isActive =
           (tab.route === '/(tabs)' && (pathname === '/(tabs)' || pathname === '/' || pathname === '/index')) ||
-          (tab.route !== '/(tabs)' && pathname === tab.route);
+          (tab.route === '/(tabs)/UploadScreen' && pathname.includes('/UploadScreen')) ||
+          (tab.route === '/SettingsScreen' && pathname === '/SettingsScreen');
         return (
           <TouchableOpacity
             key={tab.name}
