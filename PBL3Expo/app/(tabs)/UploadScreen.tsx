@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import { Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import CustomTabBar from '../../components/CustomTabBar';
+import { API_CONFIG } from '../../config/api';
 
 const UploadScreen = () => {
   const router = useRouter();
   const [image, setImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Placeholder for image picker/camera logic
   const handlePickImage = async () => {
@@ -29,11 +31,31 @@ const UploadScreen = () => {
     }
   };
 
-  const handleUpload = () => {
-    if (image) {
-      // TODO: Upload image to backend
-      // For now, just navigate back to home
-      router.replace('/(tabs)/UploadScreen');
+  const handleUpload = async () => {
+    if (!image) return;
+    setLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', {
+        uri: image,
+        type: 'image/jpeg',
+        name: 'cat.jpg',
+      } as any);
+      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.IDENTIFY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'multipart/form-data' },
+        body: formData,
+      });
+      const result = await response.json();
+      setLoading(false);
+      if (response.ok) {
+        router.push({ pathname: '/(tabs)/ResultScreen', params: { result: JSON.stringify(result), image } });
+      } else {
+        Alert.alert('Error', result.error || 'Failed to identify cat.');
+      }
+    } catch (e) {
+      setLoading(false);
+      Alert.alert('Error', 'Failed to connect to server.');
     }
   };
 
@@ -60,14 +82,15 @@ const UploadScreen = () => {
           <TouchableOpacity
             style={styles.confirmBtn}
             onPress={handleUpload}
-            disabled={!image}
+            disabled={!image || loading}
           >
             <Text style={styles.confirmBtnText}>Confirm</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} disabled={loading}>
             <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
         </View>
+        {loading && <ActivityIndicator size="large" color="#f59e0b" style={{ marginTop: 24 }} />}
       </View>
       <CustomTabBar />
     </SafeAreaView>
