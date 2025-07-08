@@ -1,6 +1,9 @@
 # Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
+# Install system dependencies for OpenCV
+RUN apt-get update && apt-get install -y libgl1-mesa-glx && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory
 WORKDIR /app
 
@@ -11,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of your app's code
 COPY . .
 
-# Expose port 8000 (Railway default)
+# Expose port 8000 (Fly.io default)
 EXPOSE 8000
 
 # Set environment variable for Flask
