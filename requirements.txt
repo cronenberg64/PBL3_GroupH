@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 flask
 flask-cors
 ultralytics
@@ -6,3 +7,5 @@ numpy
 tqdm
 Pillow
 gunicorn
+torch==2.7.1+cpu
+torchvision==0.22.1+cpu
