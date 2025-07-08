@@ -5,7 +5,7 @@ from PIL import Image
 import os
 import numpy as np
 
-# 猫IDごとに画像ファイルをまとめる
+
 def load_dataset(dataset_path):
     dataset = []  # (image_path, cat_id)
     for cat_id in os.listdir(dataset_path):
