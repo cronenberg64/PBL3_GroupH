@@ -27,16 +27,22 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   return dot / (normA * normB);
 }
 
-export async function findBestMatch(embedding: number[], threshold = 0.85): Promise<CatEmbedding | null> {
+function euclideanDistance(a: number[], b: number[]): number {
+  return Math.sqrt(a.reduce((sum, ai, i) => sum + (ai - b[i]) ** 2, 0));
+}
+
+export async function findBestMatch(embedding: number[], threshold = 0.15): Promise<(CatEmbedding & { score: number }) | null> {
   const all = await getAllEmbeddings();
+  if (all.length === 0) return null;
   let best: CatEmbedding | null = null;
-  let bestScore = threshold;
+  let bestScore = Infinity;
   for (const cat of all) {
-    const score = cosineSimilarity(embedding, cat.embedding);
-    if (score > bestScore) {
+    const score = euclideanDistance(embedding, cat.embedding);
+    if (score < bestScore) {
       best = cat;
       bestScore = score;
     }
   }
-  return best;
+  // Always return the closest match and its score, even if similarity is low
+  return { ...best!, score: bestScore };
 } 

@@ -1,11 +1,21 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import CustomTabBar from '../../components/CustomTabBar';
 
 function getConfidenceLabel(score: number) {
   if (score >= 0.8) return 'Very Likely Match';
   if (score >= 0.6) return 'Possible Match – Needs Confirmation';
   return 'No reliable match';
+}
+
+function distanceToSimilarity(distance: number) {
+  // For deep learning embeddings, distance is cosine distance (0-2)
+  // Convert to similarity (0-1, higher is better)
+  let sim = 1 - distance;
+  if (sim < 0) sim = 0;
+  if (sim > 1) sim = 1;
+  return sim;
 }
 
 function toPercent(score: number) {
@@ -44,13 +54,18 @@ const ResultScreen = () => {
         <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
           <Text style={styles.backBtnText}>Back to Home</Text>
         </TouchableOpacity>
+        <CustomTabBar />
       </View>
     );
   }
 
-  // Assume result.score is similarity (0-1), higher is better
-  const confidence = result.score !== undefined ? toPercent(result.score) : 0;
-  const label = getConfidenceLabel(confidence / 100);
+  // Convert backend distance to similarity (0-1, higher is better)
+  let similarity = 0;
+  if (result.score !== undefined && result.score !== null) {
+    similarity = distanceToSimilarity(result.score);
+  }
+  const confidence = toPercent(similarity); // This is the % you display
+  const label = getConfidenceLabel(similarity);
   const isHigh = confidence >= 80;
   const isModerate = confidence >= 60 && confidence < 80;
   const isLow = confidence < 60;
@@ -99,12 +114,7 @@ const ResultScreen = () => {
           </TouchableOpacity>
         )}
       </ScrollView>
-      {/* Bottom nav bar placeholder */}
-      <View style={styles.bottomBar}>
-        <Text style={styles.bottomIcon}>🏠</Text>
-        <View style={styles.bottomCircle} />
-        <Text style={styles.bottomIcon}>?</Text>
-      </View>
+      <CustomTabBar />
     </View>
   );
 };
@@ -127,9 +137,6 @@ const styles = StyleSheet.create({
   actionRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 12 },
   actionBtn: { backgroundColor: '#eab308', borderRadius: 8, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', marginHorizontal: 6 },
   actionBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  bottomBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 32, paddingBottom: 24, paddingTop: 8 },
-  bottomIcon: { fontSize: 24, color: '#bfa14a' },
-  bottomCircle: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#eab308', alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
   backBtn: { backgroundColor: '#facc15', borderRadius: 16, paddingVertical: 14, paddingHorizontal: 32, alignItems: 'center', marginTop: 24 },
   backBtnText: { color: '#222', fontWeight: 'bold', fontSize: 16 },

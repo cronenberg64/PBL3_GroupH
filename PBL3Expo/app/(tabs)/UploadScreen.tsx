@@ -4,11 +4,8 @@ import { Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import CustomTabBar from '../../components/CustomTabBar';
-import { API_CONFIG } from '../../config/api';
-import { getEmbedding } from '../../utils/model';
-import { findBestMatch, saveEmbedding } from '../../utils/embedding';
-import * as ImageManipulator from 'expo-image-manipulator';
-import { preprocessImageForEmbedding, getImageRGBData } from '../../utils/imageUtils';
+import { API_CONFIG, getIdentifyUrl } from '../../config/api';
+
 
 const UploadScreen = () => {
   const router = useRouter();
@@ -39,18 +36,27 @@ const UploadScreen = () => {
     if (!image) return;
     setLoading(true);
     try {
-      // Preprocess image: resize, convert to JPEG, get base64
-      const base64 = await preprocessImageForEmbedding(image);
-      // Extract RGB data
-      const rgbArray = getImageRGBData(base64);
-      // Compute mean RGB embedding
-      const embedding = getEmbedding(rgbArray);
-      const match = await findBestMatch(embedding);
+      const formData = new FormData();
+      formData.append('image', {
+        uri: image,
+        type: 'image/jpeg',
+        name: 'cat.jpg',
+      } as any);
+
+      const response = await fetch(getIdentifyUrl(), {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const result = await response.json();
       setLoading(false);
-      router.push({ pathname: '/(tabs)/ResultScreen', params: { result: JSON.stringify(match), image } });
+      router.push({ pathname: '/(tabs)/ResultScreen', params: { result: JSON.stringify(result), image } });
     } catch (e) {
       setLoading(false);
-      Alert.alert('Error', 'Failed to process image.');
+      Alert.alert('Error', 'Failed to connect to server.');
     }
   };
 

@@ -136,6 +136,8 @@ def identify_cat():
         for k, v in result.items():
             if isinstance(v, (np.bool_,)):
                 result[k] = bool(v)
+            elif isinstance(v, np.ndarray):
+                result[k] = v.tolist()
 
         return jsonify(result)
     except Exception as e:
