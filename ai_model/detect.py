@@ -28,8 +28,16 @@ def preprocess_image(image_path, target_size=(224, 224)):
     if not results or len(results[0].boxes) == 0:
         raise ValueError("No cat detected.")
 
-    # Get the first bounding box
-    box = results[0].boxes.xyxy[0].cpu().numpy().astype(int)
+    # Filter for 'cat' class (class 15 in COCO)
+    cat_class_id = 15
+    boxes = results[0].boxes
+    cat_indices = [i for i, c in enumerate(boxes.cls.cpu().numpy().astype(int)) if c == cat_class_id]
+
+    if not cat_indices:
+        raise ValueError("No cat detected.")
+
+    # Use the first detected cat
+    box = boxes.xyxy[cat_indices[0]].cpu().numpy().astype(int)
     x1, y1, x2, y2 = box
 
     image = cv2.imread(image_path)
