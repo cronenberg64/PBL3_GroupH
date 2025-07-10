@@ -66,6 +66,67 @@ python run_training.py --analysis-only
 python run_training.py --skip-analysis
 ```
 
+---
+
+## Recommended Local Directory Structure (with Dataset & Results)
+
+> **Note:** The `siamese_dataset/`, `results/`, and `models/` folders are NOT tracked by git and should be created locally. Download the dataset from Kaggle and extract it into `siamese_dataset/`.
+
+```
+PBL3_GroupH/
+│
+├── ai_model/
+│   ├── ...
+│
+├── config_siamese.py
+├── core/
+├── data/
+├── dataset_analyzer.py
+├── gui/
+├── images/
+│   └── known_cats/
+├── node_modules/           # (ignored by git)
+├── package.json
+├── PBL3/
+├── PBL3Expo/
+├── README.md
+├── requirements.txt
+├── requirements_siamese.txt
+├── run_training.py
+├── serve.py
+├── temp_upload.png         # (should be ignored by git)
+├── train_siamese.py
+├── yolov8n.pt
+├── .gitignore
+├── .venv/                  # (your virtual environment, ignored by git)
+│
+├── siamese_dataset/        # <--- Your main dataset goes here (NOT on GitHub)
+│   ├── cat_0001_うみ/
+│   │   ├── image_001.png
+│   │   └── ...
+│   ├── cat_0002_cat_226475/
+│   │   ├── image_001.png
+│   │   └── ...
+│   └── ... (many more cat folders)
+│
+├── results/                # (created after training, for logs, plots, etc.)
+│   ├── best_siamese_contrastive.h5
+│   ├── best_siamese_triplet.h5
+│   ├── siamese_training_results.csv
+│   ├── training_history_contrastive.png
+│   ├── training_history_triplet.png
+│   └── ...
+│
+└── models/                 # (optional, for saving model checkpoints)
+```
+
+**Key Points:**
+- `siamese_dataset/`: Your main training dataset. Present locally, NOT tracked by git.
+- `results/` and `models/`: Output folders for trained models, logs, and plots. Created automatically, NOT tracked by git.
+- Everything else: Code, configuration, or scripts tracked by git and shared on GitHub.
+
+---
+
 ## Configuration
 
 Edit `config_siamese.py` to customize training parameters:
@@ -190,51 +251,4 @@ BATCH_SIZE = 16
 
 ### Common Issues
 
-1. **Out of Memory**: Reduce `BATCH_SIZE` or `MAX_CATS`
-2. **Slow Training**: Use fewer cats or a smaller base model
-3. **Poor Performance**: Increase `EPOCHS` or adjust `LEARNING_RATE`
-
-### GPU Usage
-
-The pipeline automatically uses GPU if available. To force CPU usage:
-
-```python
-import os
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
-```
-
-## Next Steps
-
-After training, you can:
-
-1. **Use the trained models** in your cat identification application
-2. **Fine-tune hyperparameters** based on results
-3. **Add more data** to improve performance
-4. **Implement online learning** for new cats
-
-## Example Usage in Your Application
-
-```python
-import tensorflow as tf
-from train_siamese import SiameseModel
-
-# Load trained model
-model = tf.keras.models.load_model('best_siamese_contrastive.h5')
-
-# Get embedding model
-embedding_model = model.layers[2]  # Assuming embedding model is 3rd layer
-
-# Generate embeddings for new images
-embeddings = embedding_model.predict(new_images)
-
-# Compare embeddings using Euclidean distance
-# Lower distance = more similar cats
-```
-
-## Support
-
-If you encounter issues:
-1. Check that all dependencies are installed
-2. Verify your dataset structure
-3. Review the configuration parameters
-4. Check the generated logs and error messages 
+1. **Out of Memory**: Reduce `BATCH_SIZE`
