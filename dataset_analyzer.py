@@ -57,8 +57,12 @@ def analyze_dataset(dataset_path):
     
     return cat_stats, summary
 
-def visualize_dataset_stats(cat_stats, summary):
+def visualize_dataset_stats(cat_stats, summary, create_plots=True):
     """Create visualizations of dataset statistics"""
+    if not create_plots:
+        print("Skipping visualizations for faster analysis...")
+        return pd.DataFrame(cat_stats)
+    
     print("Creating dataset visualizations...")
     
     # Convert to DataFrame for easier plotting
@@ -98,8 +102,8 @@ def visualize_dataset_stats(cat_stats, summary):
     ax4.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('dataset_analysis.png', dpi=300, bbox_inches='tight')
-    plt.show()
+    plt.savefig('dataset_analysis.png', dpi=150, bbox_inches='tight')  # Reduced DPI for faster saving
+    plt.close()  # Close plot to free memory
     
     return df
 
@@ -120,8 +124,12 @@ def create_training_subset(cat_stats, max_cats=20, min_images=5):
     
     return selected_cats
 
-def save_analysis_results(cat_stats, summary, selected_cats):
+def save_analysis_results(cat_stats, summary, selected_cats, save_files=True):
     """Save analysis results to files"""
+    if not save_files:
+        print("Skipping file saving for faster analysis...")
+        return
+    
     print("Saving analysis results...")
     
     # Save detailed cat statistics
@@ -144,7 +152,12 @@ def save_analysis_results(cat_stats, summary, selected_cats):
 
 def main():
     """Main analysis function"""
-    dataset_path = 'siamese_dataset'
+    import sys
+    
+    # Check if running in fast mode (from training script)
+    fast_mode = '--fast' in sys.argv
+    
+    dataset_path = 'post_processing'
     
     if not os.path.exists(dataset_path):
         print(f"Dataset path {dataset_path} not found!")
@@ -163,14 +176,14 @@ def main():
     print(f"Cats with info.json: {summary['cats_with_info']}")
     print(f"Cats without info.json: {summary['cats_without_info']}")
     
-    # Visualize statistics
-    df = visualize_dataset_stats(cat_stats, summary)
+    # Visualize statistics (skip in fast mode)
+    df = visualize_dataset_stats(cat_stats, summary, create_plots=not fast_mode)
     
     # Create training subset
     selected_cats = create_training_subset(cat_stats, max_cats=20, min_images=5)
     
-    # Save results
-    save_analysis_results(cat_stats, summary, selected_cats)
+    # Save results (skip in fast mode)
+    save_analysis_results(cat_stats, summary, selected_cats, save_files=not fast_mode)
     
     print("\nAnalysis complete!")
 

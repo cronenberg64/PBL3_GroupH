@@ -1,0 +1,11 @@
+{
+  "total_cats": 250,
+  "total_images": 1880,
+  "avg_images_per_cat": 7.52,
+  "image_extensions": {
+    ".jpg": 1410,
+    ".png": 470
+  },
+  "cats_with_info": 250,
+  "cats_without_info": 0
+}
