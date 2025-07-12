@@ -56,7 +56,7 @@ yarn-error.log*
 *.webp
 
 # Project-specific
-siamese_dataset/
+post_processing/
 cat_embeddings.pkl
 best_siamese_*.h5
 training_history_*.png

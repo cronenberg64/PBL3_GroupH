@@ -30,7 +30,7 @@ def check_dependencies():
     if missing_packages:
         print(f"\nMissing packages: {', '.join(missing_packages)}")
         print("Please install them using:")
-        print(f"pip install -r requirements_siamese.txt")
+        print(f"pip install -r requirements.txt")
         return False
     
     print("All dependencies are installed!")
@@ -145,7 +145,7 @@ def main():
     # Run training
     if run_training():
         print("\n" + "=" * 50)
-        print("🎉 Training pipeline completed successfully!")
+        print("Training pipeline completed successfully!")
         print("\nGenerated files:")
         print("  - best_siamese_contrastive.h5 (best contrastive loss model)")
         print("  - best_siamese_triplet.h5 (best triplet loss model)")
