@@ -334,7 +334,7 @@ def identify_cat():
         matched_id = result.get("matched_id")
         if result.get("match_found") and matched_id in medical_info_db:
             result["medical_info"] = medical_info_db[matched_id]
-        
+
         # If no match found, provide guidance
         if not result.get("match_found"):
             result["guidance"] = {

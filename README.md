@@ -2,6 +2,14 @@
 
 A mobile application built with React Native and integrated with an image-based cat re-identification system to prevent redundant medical treatments of stray cats. This system is designed to support volunteers, animal hospitals, and TNR organizations, especially in the Kansai region of Japan. This project is made as a part of a Project-Based-Learning Course which spans over 15 weeks.
 
+**Project Pipeline & Model Workflow:**
+1. Users upload or capture a cat image via the mobile app or web interface.
+2. The backend detects and crops the cat face using a YOLO-based detector.
+3. The processed image is passed through a Siamese neural network (EfficientNetB3 backbone) to generate a 128-dimensional embedding.
+4. The embedding is compared to a database of known cat embeddings using Euclidean distance.
+5. If a match is found (distance below threshold), the system returns the cat's profile and medical info; otherwise, it provides guidance for registration.
+6. Results and confidence scores are displayed in a user-friendly UI on both web and mobile platforms.
+
 Here is the Project's Documentation Website: [Project Documentation Website](https://xknt21.github.io/)
 
 ## Dataset Source
@@ -12,7 +20,61 @@ This project uses high-quality cat re-identification datasets, originally scrape
 - **HeelLostStreetCat Dataset:** [HeelLostStreetCat Individuals Dataset](https://www.kaggle.com/datasets/tobiastrein/heellostreetcat-individuals?select=001-brother-valentine)
 - **Scraping Toolkit:** [WebScrape_neko-jirushi GitHub Repository](https://github.com/cronenberg64/WebScrape_neko-jirushi)
 
-The Kaggle dataset provides a ready-to-use, ML-friendly structure with thousands of cat images and metadata. The scraping toolkit repository contains the full pipeline for scraping, cleaning, and organizing the data from the source website, ensuring reproducibility and data provenance.
+---
+
+### **Detailed Model Architecture**
+
+#### **1. Siamese Network Structure**
+- **Input:** Two (contrastive) or three (triplet) images, each resized to 200x200x3.
+- **Backbone:**
+  - Pretrained EfficientNetB3 (default), VGG16, or MobileNetV2 (configurable).
+  - The backbone processes each image independently (shared weights).
+- **Embedding Head:**
+  - Global Average Pooling (if not present in backbone)
+  - Dense layer (128 units, ReLU activation)
+  - Optional Batch Normalization and Dropout for regularization
+  - **Output:** 128-dimensional L2-normalized embedding vector for each image
+
+#### **2. Loss Functions**
+- **Contrastive Loss:**
+  - For a pair of images (x1, x2):
+    - Compute Euclidean distance between embeddings: D = ||f(x1) - f(x2)||
+    - Loss = y * D^2 + (1 - y) * max(0, margin - D)^2
+      - y = 1 for positive pair (same cat), 0 for negative pair
+      - margin = 1.0 (configurable)
+- **Triplet Loss:**
+  - For a triplet (anchor, positive, negative):
+    - Loss = max(0, D(anchor, positive) - D(anchor, negative) + margin)
+    - margin = 0.2 (configurable)
+
+#### **3. Training Details**
+- **Optimizer:** Adam (learning rate 0.0001)
+- **Batch Size:** 16 (configurable)
+- **Epochs:** 50 (production), 1 (debug)
+- **Data Augmentation:** Optional (flip, rotate, noise)
+- **Early Stopping:** Monitors validation loss
+- **Learning Rate Scheduler:** Reduces LR on plateau
+
+#### **4. Inference Pipeline**
+- **Preprocessing:**
+  - Detect and crop cat face (YOLO-based detector)
+  - Resize to 200x200, normalize to [0,1]
+- **Embedding Extraction:**
+  - Pass image through backbone and embedding head
+- **Matching:**
+  - Compute Euclidean distance to all known cat embeddings
+  - If distance < threshold (0.4), report as match
+  - Otherwise, report as no match
+
+#### **5. Model File Formats**
+- **Training:** Saved as Keras .h5 (with custom objects) or TensorFlow SavedModel (recommended for deployment)
+- **Deployment:** Loads SavedModel or .h5 (if compatible)
+
+#### **6. Customization**
+- All architecture parameters (backbone, embedding size, margin, etc.) are configurable in `config_siamese.py`.
+- Easily switch between contrastive and triplet loss modes.
+
+---
 
 ### Related Research
 
@@ -312,6 +374,8 @@ python run_training.py --fast
 - **EfficientNetB3**: Current default, good balance of accuracy and speed
 - **VGG16**: Classic architecture, good for transfer learning
 - **MobileNetV2**: Lightweight, good for mobile deployment
+
+---
 
 ## Model Evaluation Details
 
