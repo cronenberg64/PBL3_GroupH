@@ -1,6 +1,6 @@
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'https://wide-night-light-taught.trycloudflare.com',
+  BASE_URL: 'http://192.168.40.138:5002',
   
   // API endpoints
   ENDPOINTS: {

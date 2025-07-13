@@ -221,6 +221,40 @@ PBL3_GroupH/
 4. View results (match, no match, or error)
 5. Configure server in the Explore tab if needed
 
+### Backend Server Usage
+1. Start the server: `python serve.py`
+2. Access the web interface at `http://localhost:5000`
+3. Upload cat photos for identification
+4. View detailed results with confidence scores
+
+### Administrative Features
+The system includes administrative endpoints for authorized personnel:
+
+#### System Status
+```bash
+curl http://localhost:5000/status
+```
+
+#### List Registered Cats (Admin Only)
+```bash
+curl -H "X-API-Key: admin_key_2024" http://localhost:5000/admin/cats
+```
+
+#### Register New Cat (Admin Only)
+```bash
+curl -X POST -H "X-API-Key: admin_key_2024" \
+  -F "image=@cat_photo.jpg" \
+  -F "cat_id=cat_12345" \
+  -F "cat_name=Fluffy" \
+  -F "notes=Found in downtown area" \
+  http://localhost:5000/admin/register
+```
+
+#### System Configuration (Admin Only)
+```bash
+curl -H "X-API-Key: admin_key_2024" http://localhost:5000/admin/config
+```
+
 ### Training Usage
 ```bash
 # Basic Training
@@ -336,6 +370,29 @@ The pipeline evaluates models using:
 - **Recall**: Recall for each class (weighted average)
 - **F1-Score**: Harmonic mean of precision and recall
 
+## Testing
+
+### System Testing
+Run the comprehensive test suite to verify system behavior:
+
+```bash
+# Test no-auto-registration policy
+python test_no_auto_registration.py
+```
+
+This test verifies:
+- ✅ System only performs identification
+- ✅ Auto-registration is explicitly disabled
+- ✅ Admin authorization required for registration
+- ✅ Proper guidance provided when no match is found
+- ✅ Administrative endpoints are properly secured
+
+### Manual Testing
+1. **Start the server**: `python serve.py`
+2. **Test identification**: Upload a cat photo via web interface
+3. **Test admin endpoints**: Use curl commands with API key
+4. **Verify no auto-registration**: Confirm new cats aren't added automatically
+
 ## Troubleshooting
 
 ### Common Issues:
@@ -344,6 +401,7 @@ The pipeline evaluates models using:
 3. **Import Errors**: Ensure all dependencies are installed
 4. **Dataset Issues**: Check folder structure and image formats
 5. **Evaluation Failures**: Triplet model evaluation may fail (known issue)
+6. **Port Conflicts**: If port 5000 is in use, use `PORT=5001 python serve.py`
 
 ### GPU Setup:
 ```bash
@@ -353,6 +411,31 @@ nvidia-smi
 # Install GPU version of TensorFlow (if needed)
 pip install tensorflow-gpu
 ```
+
+## System Security & Registration Policy
+
+### No Auto-Registration Policy
+The system is designed with a **strict no-auto-registration policy** to prevent database pollution and ensure data quality:
+
+- **Identification Only**: The system only performs identification against previously registered cats
+- **Auto-Registration Disabled**: New cats are never automatically added to the database
+- **Admin Authorization Required**: Only authorized personnel can register new cats
+- **TNR Compliance**: Registration requires completion of Trap-Neuter-Return procedures
+- **Data Quality Control**: Prevents duplicate registrations and ensures proper documentation
+
+### Security Features
+- **API Key Authentication**: Administrative endpoints require valid API keys
+- **File Size Limits**: Uploads limited to 10MB to prevent abuse
+- **Input Validation**: All inputs are validated and sanitized
+- **Error Handling**: Comprehensive error handling with user-friendly messages
+- **Audit Trail**: All administrative actions are logged with timestamps
+
+### Registration Workflow
+1. **TNR Process**: Cat must complete Trap-Neuter-Return procedures
+2. **Photo Documentation**: Clear photos from multiple angles required
+3. **Admin Review**: Authorized personnel review and approve registration
+4. **Database Entry**: Cat is manually registered with proper documentation
+5. **Verification**: System verifies registration and creates embeddings
 
 ## Key Functional Requirements
 

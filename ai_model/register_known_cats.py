@@ -1,147 +1,169 @@
 """
 ai_model.register_known_cats
 
-Script to register known cats in the database using the Siamese network.
-This script processes images from the known_cats folder and creates embeddings
-for the re-identification system.
+Registers known cats by creating embeddings from their images using our trained Siamese network.
+This script processes images from the post_processing directory and creates a database of embeddings.
 
-Usage:
-    python ai_model/register_known_cats.py
+Functions:
+    - register_known_cats(): Creates embeddings for all known cats
+    - save_embeddings(): Saves embeddings to pickle file
 """
 
 import os
 import pickle
-from detect import preprocess_image
-from embedder import get_embedding
+import numpy as np
+from PIL import Image
+import cv2
+from tqdm import tqdm
+from .embedder import get_embedding
+from .detect import preprocess_image
 
-def register_known_cats(known_cats_folder="./images/known_cats", output_file="cat_embeddings.pkl"):
+def register_known_cats(dataset_path="post_processing", output_file="cat_embeddings.pkl"):
     """
-    Register known cats by processing their images and creating embeddings.
+    Register known cats by creating embeddings from their images.
     
     Args:
-        known_cats_folder: Path to folder containing cat images
-        output_file: Path to save the embeddings database
+        dataset_path: Path to the dataset directory
+        output_file: Output pickle file for embeddings
+    
+    Returns:
+        List of embeddings with cat IDs
     """
-    # Database to store embeddings
-db_embeddings = []
-
-    if not os.path.exists(known_cats_folder):
-        print(f"Known cats folder not found: {known_cats_folder}")
-        return
+    print("Starting cat registration with trained contrastive model...")
     
-    # Process each file in the known cats folder
-for filename in os.listdir(known_cats_folder):
-        if filename.lower().endswith((".jpg", ".jpeg", ".png")):
-        image_path = os.path.join(known_cats_folder, filename)
-        try:
-            print(f"Processing {filename}...")
-                
-                # Detect and crop cat from image
-                cropped_img = preprocess_image(image_path)
-                
-                # Generate embedding using Siamese network
-                embedding = get_embedding(cropped_img)
-                
-                # Store in database
-                cat_id = filename.split('.')[0]  # Remove extension
-                db_embeddings.append({
-                    "id": cat_id,
-                    "embedding": embedding,
-                    "image_path": image_path
-                })
-                
-                print(f"  ✓ Registered {cat_id}")
-                
-            except Exception as e:
-                print(f"  ✗ Failed to process {filename}: {e}")
+    if not os.path.exists(dataset_path):
+        print(f"Dataset path {dataset_path} does not exist!")
+        return []
     
-    # Save embeddings to file
-    with open(output_file, "wb") as f:
-        pickle.dump(db_embeddings, f)
+    embeddings_db = []
+    cat_folders = [f for f in os.listdir(dataset_path) if f.startswith('cat_')]
     
-    print(f"\nRegistration complete: {len(db_embeddings)} cats registered in {output_file}")
-    return db_embeddings
-
-def register_cats_from_subdirectories(base_folder="./images/known_cats", output_file="cat_embeddings.pkl"):
-    """
-    Register cats from a directory structure where each subdirectory is a cat.
+    print(f"Found {len(cat_folders)} cat folders")
     
-    Expected structure:
-    base_folder/
-    ├── cat_001/
-    │   ├── image1.jpg
-    │   ├── image2.jpg
-    │   └── ...
-    ├── cat_002/
-    │   ├── image1.jpg
-    │   └── ...
-    └── ...
-    
-    Args:
-        base_folder: Path to base folder containing cat subdirectories
-        output_file: Path to save the embeddings database
-    """
-    db_embeddings = []
-    
-    if not os.path.exists(base_folder):
-        print(f"Base folder not found: {base_folder}")
-        return
-    
-    # Process each cat subdirectory
-    for cat_dir in sorted(os.listdir(base_folder)):
-        cat_path = os.path.join(base_folder, cat_dir)
+    for cat_folder in tqdm(cat_folders, desc="Processing cats"):
+        cat_path = os.path.join(dataset_path, cat_folder)
+        
         if not os.path.isdir(cat_path):
             continue
-            
-        print(f"Processing cat: {cat_dir}")
         
-        # Process all images for this cat
-        for filename in os.listdir(cat_path):
-            if filename.lower().endswith((".jpg", ".jpeg", ".png")):
-                image_path = os.path.join(cat_path, filename)
-                try:
-                    print(f"  Processing {filename}...")
-                    
-                    # Detect and crop cat from image
-            cropped_img = preprocess_image(image_path)
-                    
-                    # Generate embedding using Siamese network
-                    embedding = get_embedding(cropped_img)
-                    
-                    # Store in database
-            db_embeddings.append({
-                        "id": cat_dir,  # Use directory name as cat ID
-                        "embedding": embedding,
-                        "image_path": image_path
-            })
-                    
-                    print(f"    ✓ Registered {cat_dir}")
-                    
-        except Exception as e:
-                    print(f"    ✗ Failed to process {filename}: {e}")
+        # Get all image files in the cat folder
+        image_files = []
+        for ext in ['*.jpg', '*.jpeg', '*.png']:
+            image_files.extend([f for f in os.listdir(cat_path) if f.lower().endswith(ext.split('*')[1])])
+        
+        if not image_files:
+            print(f"No images found in {cat_folder}")
+            continue
+        
+        print(f"Processing {cat_folder} with {len(image_files)} images")
+        
+        # Create embeddings for each image
+        for img_file in image_files:
+            img_path = os.path.join(cat_path, img_file)
+            
+            try:
+                # Preprocess image (detect and crop cat)
+                cropped_image = preprocess_image(img_path)
+                
+                if cropped_image is None:
+                    print(f"Could not detect cat in {img_path}")
+                    continue
+                
+                # Get embedding using our trained model
+                embedding = get_embedding(cropped_image)
+                
+                # Create entry
+                entry = {
+                    "id": cat_folder,
+                    "image_file": img_file,
+                    "embedding": embedding,
+                    "image_path": img_path
+                }
+                
+                embeddings_db.append(entry)
+                
+            except Exception as e:
+                print(f"Error processing {img_path}: {e}")
+                continue
+    
+    print(f"Successfully created {len(embeddings_db)} embeddings")
+    
+    # Save embeddings
+    save_embeddings(embeddings_db, output_file)
+    
+    return embeddings_db
 
-    # Save embeddings to file
-    with open(output_file, "wb") as f:
-    pickle.dump(db_embeddings, f)
+def save_embeddings(embeddings_db, output_file="cat_embeddings.pkl"):
+    """
+    Save embeddings to pickle file.
+    
+    Args:
+        embeddings_db: List of embedding dictionaries
+        output_file: Output file path
+    """
+    try:
+        with open(output_file, 'wb') as f:
+            pickle.dump(embeddings_db, f)
+        print(f"Saved {len(embeddings_db)} embeddings to {output_file}")
+    except Exception as e:
+        print(f"Error saving embeddings: {e}")
 
-    print(f"\nRegistration complete: {len(db_embeddings)} embeddings registered in {output_file}")
-    return db_embeddings
+def load_embeddings(input_file="cat_embeddings.pkl"):
+    """
+    Load embeddings from pickle file.
+    
+    Args:
+        input_file: Input file path
+    
+    Returns:
+        List of embeddings
+    """
+    try:
+        with open(input_file, 'rb') as f:
+            embeddings = pickle.load(f)
+        print(f"Loaded {len(embeddings)} embeddings from {input_file}")
+        return embeddings
+    except Exception as e:
+        print(f"Error loading embeddings: {e}")
+        return []
+
+def get_cat_info(cat_id, embeddings_db):
+    """
+    Get information about a specific cat.
+    
+    Args:
+        cat_id: Cat ID to look up
+        embeddings_db: Database of embeddings
+    
+    Returns:
+        Dictionary with cat information
+    """
+    cat_embeddings = [e for e in embeddings_db if e["id"] == cat_id]
+    
+    if not cat_embeddings:
+        return None
+    
+    return {
+        "id": cat_id,
+        "num_images": len(cat_embeddings),
+        "image_files": [e["image_file"] for e in cat_embeddings],
+        "image_paths": [e["image_path"] for e in cat_embeddings]
+    }
 
 if __name__ == "__main__":
-    # Check if we have subdirectories (organized structure) or flat structure
-    known_cats_folder = "./images/known_cats"
+    # Register known cats
+    embeddings = register_known_cats()
     
-    if os.path.exists(known_cats_folder):
-        # Check if there are subdirectories
-        has_subdirs = any(os.path.isdir(os.path.join(known_cats_folder, item)) 
-                         for item in os.listdir(known_cats_folder))
+    if embeddings:
+        print("\nRegistration Summary:")
+        unique_cats = set(e["id"] for e in embeddings)
+        print(f"Total unique cats: {len(unique_cats)}")
+        print(f"Total embeddings: {len(embeddings)}")
         
-        if has_subdirs:
-            print("Detected organized directory structure. Registering cats from subdirectories...")
-            register_cats_from_subdirectories(known_cats_folder)
-        else:
-            print("Detected flat directory structure. Registering cats from files...")
-            register_known_cats(known_cats_folder)
+        # Show some statistics
+        for cat_id in list(unique_cats)[:5]:  # Show first 5 cats
+            info = get_cat_info(cat_id, embeddings)
+            if info:
+                print(f"  {cat_id}: {info['num_images']} images")
     else:
-        print(f"Known cats folder not found: {known_cats_folder}")
-        print("Please create the folder and add cat images.")
+        print("No embeddings created. Check dataset path and model availability.")

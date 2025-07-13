@@ -2,7 +2,7 @@
 ai_model.siamese_model
 
 Implements a Siamese network for cat re-identification using TensorFlow/Keras.
-Based on the architecture from hsc-reident repository.
+Based on the architecture from hsc-reident repository and our trained contrastive model.
 
 This module provides:
 - Siamese network architecture with pre-trained base models
@@ -22,12 +22,12 @@ from typing import List, Tuple, Optional
 import cv2
 
 class SiameseNetwork:
-    def __init__(self, base_model_name: str = 'efficientnetb0', embedding_dim: int = 128):
+    def __init__(self, base_model_name: str = 'efficientnetb3', embedding_dim: int = 128):
         """
         Initialize Siamese network for cat re-identification.
         
         Args:
-            base_model_name: Name of the base model ('efficientnetb0', 'vgg16', 'mobilenet')
+            base_model_name: Name of the base model ('efficientnetb3', 'vgg16', 'mobilenet')
             embedding_dim: Dimension of the embedding vector
         """
         self.base_model_name = base_model_name
@@ -38,7 +38,13 @@ class SiameseNetwork:
     
     def _get_base_model(self):
         """Get pre-trained base model."""
-        if self.base_model_name == 'efficientnetb0':
+        if self.base_model_name == 'efficientnetb3':
+            base_model = applications.EfficientNetB3(
+                weights='imagenet',
+                include_top=False,
+                input_shape=(200, 200, 3)  # Match our training configuration
+            )
+        elif self.base_model_name == 'efficientnetb0':
             base_model = applications.EfficientNetB0(
                 weights='imagenet',
                 include_top=False,
@@ -62,62 +68,56 @@ class SiameseNetwork:
         return base_model
     
     def _build_model(self):
-        """Build the Siamese network architecture."""
+        """Build the Siamese network architecture matching our training."""
         base_model = self._get_base_model()
         
         # Freeze base model layers
         base_model.trainable = False
         
-        # Create embedding branch
-        input_layer = layers.Input(shape=(224, 224, 3))
+        # Create embedding branch matching our training architecture
+        input_layer = layers.Input(shape=(200, 200, 3) if self.base_model_name == 'efficientnetb3' else (224, 224, 3))
         x = layers.Rescaling(1./255)(input_layer)
         x = base_model(x, training=False)
-        x = layers.GlobalAveragePooling2D()(x)
-        x = layers.Dropout(0.5)(x)
-        x = layers.Dense(512, activation='relu')(x)
-        x = layers.Dropout(0.3)(x)
-        embedding = layers.Dense(self.embedding_dim, activation=None, name='embedding')(x)
+        x = layers.Flatten()(x)
+        x = layers.Dense(256, activation='relu')(x)
+        x = layers.Dense(128, activation='relu')(x)
+        embedding = layers.Dense(self.embedding_dim, activation=None, name='embeddings')(x)
         
-        # Normalize embeddings
+        # Normalize embeddings (L2 normalization)
         embedding = layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=1), name='normalized_embedding')(embedding)
         
         self.embedding_model = Model(input_layer, embedding, name='embedding_model')
         
-        # Create Siamese model for training
-        anchor_input = layers.Input(shape=(224, 224, 3), name='anchor_input')
-        positive_input = layers.Input(shape=(224, 224, 3), name='positive_input')
-        negative_input = layers.Input(shape=(224, 224, 3), name='negative_input')
+        # Create Siamese model for training (contrastive loss architecture)
+        input_a = layers.Input(shape=(200, 200, 3) if self.base_model_name == 'efficientnetb3' else (224, 224, 3))
+        input_b = layers.Input(shape=(200, 200, 3) if self.base_model_name == 'efficientnetb3' else (224, 224, 3))
         
-        anchor_embedding = self.embedding_model(anchor_input)
-        positive_embedding = self.embedding_model(positive_input)
-        negative_embedding = self.embedding_model(negative_input)
+        embedding_a = self.embedding_model(input_a)
+        embedding_b = self.embedding_model(input_b)
+        
+        # Calculate Euclidean distance
+        distance = layers.Lambda(lambda x: tf.sqrt(tf.reduce_sum(tf.square(x[0] - x[1]), axis=1, keepdims=True)))([embedding_a, embedding_b])
         
         self.model = Model(
-            inputs=[anchor_input, positive_input, negative_input],
-            outputs=[anchor_embedding, positive_embedding, negative_embedding],
+            inputs=[input_a, input_b],
+            outputs=distance,
             name='siamese_network'
         )
     
-    def triplet_loss(self, margin=0.2):
-        """Triplet loss function."""
+    def contrastive_loss(self, margin=1.0):
+        """Contrastive loss function matching our training."""
         def loss(y_true, y_pred):
-            anchor, positive, negative = y_pred[:, 0], y_pred[:, 1], y_pred[:, 2]
-            
-            # Calculate distances
-            pos_dist = tf.reduce_sum(tf.square(anchor - positive), axis=1)
-            neg_dist = tf.reduce_sum(tf.square(anchor - negative), axis=1)
-            
-            # Triplet loss
-            basic_loss = pos_dist - neg_dist + margin
-            loss = tf.maximum(basic_loss, 0.0)
-            
-            return tf.reduce_mean(loss)
+            y_true = tf.cast(y_true, y_pred.dtype)
+            squared_preds = tf.square(y_pred)
+            squared_margin = tf.square(tf.maximum(margin - y_pred, 0))
+            loss = tf.reduce_mean((1.0 - y_true) * squared_preds + y_true * squared_margin)
+            return loss
         return loss
     
-    def compile_model(self, learning_rate=0.0001):
-        """Compile the model with triplet loss."""
+    def compile_model(self, learning_rate=0.001):
+        """Compile the model with contrastive loss."""
         optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
-        self.model.compile(optimizer=optimizer, loss=self.triplet_loss())
+        self.model.compile(optimizer=optimizer, loss=self.contrastive_loss())
     
     def get_embedding(self, image_array: np.ndarray) -> np.ndarray:
         """
@@ -129,19 +129,33 @@ class SiameseNetwork:
         Returns:
             Embedding vector of shape (embedding_dim,)
         """
-        if len(image_array.shape) == 3:
-            image_array = np.expand_dims(image_array, axis=0)
-        
-        # Ensure correct shape and type
-        if image_array.shape[1:] != (224, 224, 3):
-            image_array = cv2.resize(image_array, (224, 224))
+        try:
             if len(image_array.shape) == 3:
                 image_array = np.expand_dims(image_array, axis=0)
-        
-        image_array = image_array.astype(np.float32)
-        
-        embedding = self.embedding_model.predict(image_array, verbose=0)
-        return embedding[0]  # Return first (and only) embedding
+            
+            # Ensure correct shape and type
+            target_shape = (200, 200, 3) if self.base_model_name == 'efficientnetb3' else (224, 224, 3)
+            
+            # Check if resize is needed
+            if image_array.shape[1:] != target_shape:
+                # Ensure we have valid dimensions for resize
+                if image_array.shape[1] > 0 and image_array.shape[2] > 0:
+                    image_array = cv2.resize(image_array[0], (target_shape[0], target_shape[1]))
+                    if len(image_array.shape) == 3:
+                        image_array = np.expand_dims(image_array, axis=0)
+                else:
+                    # Create a default image if dimensions are invalid
+                    image_array = np.zeros((1, target_shape[0], target_shape[1], 3), dtype=np.uint8)
+            
+            image_array = image_array.astype(np.float32)
+            
+            embedding = self.embedding_model.predict(image_array, verbose=0)
+            return embedding[0]  # Return first (and only) embedding
+            
+        except Exception as e:
+            print(f"Error in get_embedding: {e}")
+            # Return a default embedding
+            return np.zeros(self.embedding_dim)
     
     def save_model(self, model_path: str):
         """Save the embedding model."""
@@ -152,78 +166,25 @@ class SiameseNetwork:
     def load_model(self, model_path: str):
         """Load a saved embedding model."""
         if os.path.exists(model_path):
-            self.embedding_model = keras.models.load_model(model_path)
-            print(f"Loaded model from {model_path}")
+            try:
+                # Try to load the full model first
+                self.embedding_model = keras.models.load_model(model_path)
+                print(f"Loaded model from {model_path}")
+            except:
+                # If that fails, try to load just the embedding model
+                try:
+                    # Load the full Siamese model and extract embedding model
+                    full_model = keras.models.load_model(model_path, custom_objects={
+                        'contrastive_loss': self.contrastive_loss()
+                    })
+                    # Extract the embedding model from the full model
+                    self.embedding_model = full_model.layers[2]  # The shared embedding model
+                    print(f"Loaded embedding model from full model at {model_path}")
+                except Exception as e:
+                    print(f"Error loading model from {model_path}: {e}")
+                    print("Using default model architecture")
         else:
             print(f"Model not found at {model_path}, using default model")
-
-def create_triplet_dataset(image_paths: List[str], labels: List[int], batch_size: int = 32):
-    """
-    Create triplet dataset for training.
-    
-    Args:
-        image_paths: List of image file paths
-        labels: List of corresponding labels
-        batch_size: Batch size for training
-    
-    Returns:
-        TensorFlow dataset yielding triplets
-    """
-    def load_and_preprocess_image(image_path):
-        img = tf.io.read_file(image_path)
-        img = tf.image.decode_jpeg(img, channels=3)
-        img = tf.image.resize(img, (224, 224))
-        return img
-    
-    def create_triplets(anchor_path, positive_path, negative_path):
-        anchor = load_and_preprocess_image(anchor_path)
-        positive = load_and_preprocess_image(positive_path)
-        negative = load_and_preprocess_image(negative_path)
-        return anchor, positive, negative
-    
-    # Create triplets (simplified - in practice you'd want more sophisticated triplet mining)
-    anchor_paths, positive_paths, negative_paths = [], [], []
-    
-    # Group images by label
-    label_to_paths = {}
-    for path, label in zip(image_paths, labels):
-        if label not in label_to_paths:
-            label_to_paths[label] = []
-        label_to_paths[label].append(path)
-    
-    # Create triplets
-    for anchor_label, anchor_paths_list in label_to_paths.items():
-        if len(anchor_paths_list) < 2:
-            continue
-        
-        # Find negative samples (different label)
-        negative_labels = [l for l in label_to_paths.keys() if l != anchor_label]
-        if not negative_labels:
-            continue
-        
-        for anchor_path in anchor_paths_list:
-            # Positive sample (same label, different image)
-            positive_paths_list = [p for p in anchor_paths_list if p != anchor_path]
-            if not positive_paths_list:
-                continue
-            
-            positive_path = np.random.choice(positive_paths_list)
-            
-            # Negative sample (different label)
-            negative_label = np.random.choice(negative_labels)
-            negative_path = np.random.choice(label_to_paths[negative_label])
-            
-            anchor_paths.append(anchor_path)
-            positive_paths.append(positive_path)
-            negative_paths.append(negative_path)
-    
-    # Create dataset
-    dataset = tf.data.Dataset.from_tensor_slices((anchor_paths, positive_paths, negative_paths))
-    dataset = dataset.map(create_triplets, num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.batch(batch_size)
-    dataset = dataset.prefetch(tf.data.AUTOTUNE)
-    
-    return dataset
 
 # Global model instance
 _siamese_model = None
@@ -232,7 +193,8 @@ def get_siamese_model() -> SiameseNetwork:
     """Get or create the global Siamese model instance."""
     global _siamese_model
     if _siamese_model is None:
-        model_path = "ai_model/weights/siamese_model"
-        _siamese_model = SiameseNetwork()
+        # Try to load our trained contrastive model
+        model_path = "best_siamese_contrastive.h5"
+        _siamese_model = SiameseNetwork(base_model_name='efficientnetb3', embedding_dim=128)
         _siamese_model.load_model(model_path)
     return _siamese_model 

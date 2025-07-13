@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, Alert } from 'react-native';
 import { Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -10,7 +10,6 @@ import { API_CONFIG, getIdentifyUrl } from '../../config/api';
 const UploadScreen = () => {
   const router = useRouter();
   const [image, setImage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
 
   // Placeholder for image picker/camera logic
   const handlePickImage = async () => {
@@ -34,30 +33,15 @@ const UploadScreen = () => {
 
   const handleUpload = async () => {
     if (!image) return;
-    setLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('image', {
-        uri: image,
-        type: 'image/jpeg',
-        name: 'cat.jpg',
-      } as any);
-
-      const response = await fetch(getIdentifyUrl(), {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      const result = await response.json();
-      setLoading(false);
-      router.push({ pathname: '/(tabs)/ResultScreen', params: { result: JSON.stringify(result), image } });
-    } catch (e) {
-      setLoading(false);
-      Alert.alert('Error', 'Failed to connect to server.');
-    }
+    
+    // Navigate to loading screen with image data
+    router.push({ 
+      pathname: '/(tabs)/LoadingScreen', 
+      params: { 
+        imageUri: image,
+        action: 'identify'
+      } 
+    });
   };
 
   const handleCancel = () => {
@@ -83,11 +67,11 @@ const UploadScreen = () => {
           <TouchableOpacity
             style={styles.confirmBtn}
             onPress={handleUpload}
-            disabled={!image || loading}
+            disabled={!image}
           >
             <Text style={styles.confirmBtnText}>Confirm</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel} disabled={loading}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={handleCancel}>
             <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
         </View>

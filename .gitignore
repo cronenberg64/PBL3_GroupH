@@ -79,3 +79,21 @@ $RECYCLE.BIN/
 *.swp
 *.swo
 *~
+
+# Ignore temp upload and static files except for catWalking.gif
+/temp_upload.png
+/static/*
+!static/catWalking.gif
+
+# Ignore data logs and database
+/data/logs/
+/data/db.sqlite3
+
+# Ignore macOS system files everywhere
+**/.DS_Store
+
+# Ignore backup and test outputs
+*.backup
+
+# Python virtual environments
+.venv_tf216/
