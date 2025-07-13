@@ -108,14 +108,14 @@ def run_training():
 
 def main():
     """Main function to run the complete pipeline"""
-    parser = argparse.ArgumentParser(description='Run Siamese network training pipeline')
+    parser = argparse.ArgumentParser(description='Run Optimized Siamese Network Training Pipeline')
     parser.add_argument('--skip-analysis', action='store_true', help='Skip dataset analysis step')
     parser.add_argument('--skip-dependency-check', action='store_true', help='Skip dependency check')
     parser.add_argument('--analysis-only', action='store_true', help='Only run dataset analysis')
-    parser.add_argument('--fast', action='store_true', help='Run in fast mode (skip analysis, use fast dataset analysis)')
+    parser.add_argument('--fast', action='store_true', help='Run in fast mode (reduced parameters)')
     args = parser.parse_args()
-    print("Siamese Network Training Pipeline")
-    print("=" * 50)
+    print("Optimized Siamese Network Training Pipeline")
+    print("=" * 60)
     # Check dependencies
     if not args.skip_dependency_check:
         if not check_dependencies():
@@ -141,8 +141,8 @@ def main():
         print("\nSkipping dataset analysis in fast mode...")
     # Run training
     if run_training():
-        print("\n" + "=" * 50)
-        print("Training pipeline completed successfully!")
+        print("\n" + "=" * 60)
+        print("Optimized Training Pipeline Completed Successfully!")
         print("\nGenerated files:")
         print("  - best_siamese_contrastive.h5 (best contrastive loss model)")
         print("  - best_siamese_triplet.h5 (best triplet loss model)")
@@ -154,7 +154,7 @@ def main():
         print("  - selected_cats_for_training.csv (selected cats)")
         return 0
     else:
-        print("\n❌ Training pipeline failed!")
+        print("\n❌ Optimized Training Pipeline Failed!")
         return 1
 
 if __name__ == "__main__":
