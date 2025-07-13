@@ -1,8 +1,8 @@
 # Smart Re-Identification System for Stray Cats Post-TNR Program
 
-[Project Documentation Website](https://xknt21.github.io/)
-
 A mobile application built with React Native and integrated with an image-based cat re-identification system to prevent redundant medical treatments of stray cats. This system is designed to support volunteers, animal hospitals, and TNR organizations, especially in the Kansai region of Japan. This project is made as a part of a Project-Based-Learning Course which spans over 15 weeks.
+
+Here is the Project's Documentation Website: [Project Documentation Website](https://xknt21.github.io/)
 
 ## Dataset Source
 
@@ -381,11 +381,11 @@ python test_no_auto_registration.py
 ```
 
 This test verifies:
-- ✅ System only performs identification
-- ✅ Auto-registration is explicitly disabled
-- ✅ Admin authorization required for registration
-- ✅ Proper guidance provided when no match is found
-- ✅ Administrative endpoints are properly secured
+- System only performs identification
+- Auto-registration is explicitly disabled
+- Admin authorization required for registration
+- Proper guidance provided when no match is found
+- Administrative endpoints are properly secured
 
 ### Manual Testing
 1. **Start the server**: `python serve.py`
@@ -462,7 +462,3 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 This project is licensed under the MIT License and is part of PBL3 Group H coursework.
 
 ---
-
-**Successfully trained and ready for deployment!**
-
-**Key Achievement:** Contrastive learning model achieved 69.4% accuracy on cat re-identification task with limited training data (240 images from 20 cats).
