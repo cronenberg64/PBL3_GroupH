@@ -46,8 +46,8 @@ yarn-error.log*
 *.weights
 *.npz
 *.npy
-*.csv
-*.png
+
+# Images and media (ignore sample/uploaded images but keep training plots)
 *.jpg
 *.jpeg
 *.gif
@@ -58,12 +58,13 @@ yarn-error.log*
 # Project-specific
 post_processing/
 cat_embeddings.pkl
-best_siamese_*.h5
-training_history_*.png
-dataset_analysis.png
-dataset_analysis.csv
-selected_cats_for_training.csv
-siamese_training_results.csv
+# Keep trained models and results for sharing
+!best_siamese_*.h5
+!training_history_*.png
+!dataset_analysis.png
+!dataset_analysis.csv
+!selected_cats_for_training.csv
+!siamese_training_results.csv
 results/
 models/
 logs/

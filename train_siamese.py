@@ -53,10 +53,10 @@ try:
         # Allow memory growth to prevent memory issues
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
-            # Set memory limit to 7GB to leave buffer for system
+            # Set memory limit to 6GB to leave more buffer for system
             tf.config.experimental.set_virtual_device_configuration(
                 gpu,
-                [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=7168)]
+                [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=6144)]
             )
         print(f"GPU memory growth enabled for {len(gpus)} GPU(s)")
         print("Memory limit set to 7GB to prevent OOM errors")
@@ -76,32 +76,32 @@ except Exception as e:
     print("Continuing anyway...")
 
 # Configuration
-# --- ULTRA-FAST DEBUG MODE SETTINGS ---
+# --- VGG16 PAPER-INSPIRED SETTINGS ---
 DEBUG_MODE = False
 
 if DEBUG_MODE:
     MAX_CATS = 2
     MIN_IMAGES_PER_CAT = 1
     EPOCHS = 1
-    BASE_MODEL = 'mobilenet'
+    BASE_MODEL = 'vgg16'
     IMG_SIZE = 64
     BATCH_SIZE = 4
-    print("[DEBUG MODE] Using 2 cats, 1 image per cat, 1 epoch, MobileNetV2, 64x64 images, batch size 4.")
+    print("[DEBUG MODE] Using 2 cats, 1 image per cat, 1 epoch, VGG16, 64x64 images, batch size 4.")
 else:
-    # Optimized settings for RTX 2080 (8GB VRAM) - Memory Safe
-    MAX_CATS = 120  # Reduced to prevent memory issues
-    MIN_IMAGES_PER_CAT = 3  # Better quality threshold
-    MAX_IMAGES_PER_CAT = 15  # Reduced to save memory
-    EPOCHS = 50  # More epochs with early stopping
-    BASE_MODEL = 'efficientnetb3'  # Better than B2, safer than B4
-    IMG_SIZE = 200  # Reduced from 224 to save memory
-    BATCH_SIZE = 16  # Reduced to prevent memory issues
+    # Paper-inspired settings, memory safe
+    MAX_CATS = 150  # reduced to prevent OOM with VGG16
+    MIN_IMAGES_PER_CAT = 3
+    MAX_IMAGES_PER_CAT = 12  # reduced to save memory
+    EPOCHS = 50
+    BASE_MODEL = 'vgg16'  # as in the paper
+    IMG_SIZE = 150  # as in the paper
+    BATCH_SIZE = 8  # reduced to prevent OOM
 
-EMBEDDING_DIM = 256  # Increased for better feature learning
-MARGIN = 0.5  # Reduced margin for better learning
-LEARNING_RATE = 0.0001  # Reduced learning rate for stability
-VALIDATION_SPLIT = 0.15  # Reduced to maximize training data
-TEST_SPLIT = 0.15  # Reduced to maximize training data
+EMBEDDING_DIM = 128  # as in the paper
+MARGIN = 1.0  # as in the paper
+LEARNING_RATE = 0.0001
+VALIDATION_SPLIT = 0.15
+TEST_SPLIT = 0.15
 
 # Training strategy improvements
 PATIENCE = 20  # More patience for early stopping
@@ -118,10 +118,13 @@ class SiameseDataset:
         self.labels = []  # Will be converted to numpy array later
         self.label_encoder = LabelEncoder()
         
-    def load_dataset(self, max_cats=None, min_images_per_cat=2, max_images_per_cat=15):
-        """Load images from the organized dataset with better filtering"""
+    def load_dataset(self, max_cats=None, min_images_per_cat=2, max_images_per_cat=15, augment=False):
+        """Load images from the organized dataset with better filtering and optional augmentation"""
         print("Loading dataset...")
         start_time = time.time()
+        # Ensure images and labels are lists
+        self.images = []
+        self.labels = []
         
         # Get all cat folders
         cat_folders = [f for f in os.listdir(self.dataset_path) 
@@ -167,6 +170,19 @@ class SiameseDataset:
                         img = cv2.resize(img, (self.img_size, self.img_size))
                         img = img.astype(np.float32) / 255.0
                         
+                        # Augmentation (only for training)
+                        if augment:
+                            if random.random() < 0.5:
+                                img = np.fliplr(img)
+                            if random.random() < 0.5:
+                                img = np.flipud(img)
+                            if random.random() < 0.5:
+                                angle = random.uniform(-20, 20)
+                                M = cv2.getRotationMatrix2D((self.img_size/2, self.img_size/2), angle, 1)
+                                img = cv2.warpAffine(img, M, (self.img_size, self.img_size), borderMode=cv2.BORDER_REFLECT)
+                            if random.random() < 0.3:
+                                noise = np.random.normal(0, 0.02, img.shape)
+                                img = np.clip(img + noise, 0, 1)
                         self.images.append(img)
                         self.labels.append(cat_folder)
                 except Exception as e:
@@ -312,11 +328,10 @@ class SiameseModel:
         self.base_model_name = base_model
         
     def create_embedding_model(self):
-        """Create the base embedding model"""
+        """Create the base embedding model (VGG16 + paper head)"""
         print(f"Creating {self.base_model_name} embedding model...")
-        
-        # Model mapping for better models
         model_mapping = {
+            'vgg16': VGG16,
             # EfficientNet family (best performance)
             'efficientnet': EfficientNetB0,
             'efficientnetb0': EfficientNetB0,
@@ -340,7 +355,6 @@ class SiameseModel:
             'inceptionresnetv2': InceptionResNetV2,
             
             # VGG family (classic, reliable)
-            'vgg16': VGG16,
             'vgg19': VGG19,
             
             # MobileNet family (lightweight)
@@ -366,8 +380,8 @@ class SiameseModel:
             print(f"{self.base_model_name} loaded successfully")
         except Exception as e:
             print(f"Error loading {self.base_model_name}: {e}")
-            print("Falling back to EfficientNetB0...")
-            base_model = EfficientNetB0(
+            print("Falling back to VGG16...")
+            base_model = VGG16(
                 include_top=False,
                 weights='imagenet',
                 input_shape=self.input_shape
@@ -380,26 +394,11 @@ class SiameseModel:
         # Create embedding model with improved architecture
         inputs = Input(shape=self.input_shape)
         x = base_model(inputs)
-        x = GlobalAveragePooling2D()(x)
-        
-        # Improved architecture for better learning
-        x = Dense(1024, activation='relu')(x)
-        x = BatchNormalization()(x)
-        x = Dropout(0.4)(x)
-        
-        x = Dense(512, activation='relu')(x)
-        x = BatchNormalization()(x)
-        x = Dropout(0.3)(x)
-        
+        x = Flatten()(x)
         x = Dense(256, activation='relu')(x)
-        x = BatchNormalization()(x)
-        x = Dropout(0.2)(x)
-        
+        x = Dense(128, activation='relu')(x)
         embeddings = Dense(self.embedding_dim, activation=None, name='embeddings')(x)
-        
-        # Normalize embeddings for better distance learning
         embeddings = tf.keras.layers.Lambda(lambda x: tf.math.l2_normalize(x, axis=1))(embeddings)
-        
         embedding_model = Model(inputs, outputs=embeddings, name='embedding_model')
         return embedding_model
     
@@ -450,15 +449,16 @@ class SiameseModel:
         positive_embedding = embedding_model(positive_input)
         negative_embedding = embedding_model(negative_input)
         
-        # Calculate triplet loss using custom layer
+        # Use the existing TripletLossLayer
         triplet_loss_layer = TripletLossLayer(alpha=0.2)
-        loss = triplet_loss_layer([anchor_embedding, positive_embedding, negative_embedding])
+        triplet_loss = triplet_loss_layer([anchor_embedding, positive_embedding, negative_embedding])
         
-        # Create model
+        # Create model that outputs the loss directly
         model = Model(
             inputs=[anchor_input, positive_input, negative_input],
-            outputs=loss
+            outputs=triplet_loss
         )
+        
         model.compile(
             loss=self._identity_loss,
             optimizer=Adam(learning_rate=LEARNING_RATE)
@@ -475,10 +475,10 @@ class SiameseModel:
     def _contrastive_loss(self, y_true, y_pred, margin=MARGIN):
         """Contrastive loss function"""
         y_true = tf.cast(y_true, y_pred.dtype)
+        one_tensor = tf.ones_like(y_true)
         squared_preds = tf.square(y_pred)
         squared_margin = tf.square(tf.maximum(margin - y_pred, 0))
-        # Fix the contrastive loss calculation
-        loss = tf.reduce_mean((1.0 - y_true) * squared_preds + y_true * squared_margin)
+        loss = tf.reduce_mean((one_tensor - y_true) * squared_preds + y_true * squared_margin)
         return loss
     
     def _triplet_loss(self, inputs, alpha=0.2):
@@ -547,8 +547,8 @@ class SiameseTrainer:
         elif self.loss_type == 'triplet':
             self.history = self.model.fit(
                 [train_data[0], train_data[1], train_data[2]],
-                np.ones(len(train_data[0])),  # Dummy labels
-                validation_data=([val_data[0], val_data[1], val_data[2]], np.ones(len(val_data[0]))),
+                np.zeros(len(train_data[0])),  # Dummy labels (not used)
+                validation_data=([val_data[0], val_data[1], val_data[2]], np.zeros(len(val_data[0]))),
                 batch_size=batch_size,
                 epochs=epochs,
                 callbacks=callbacks,
@@ -558,41 +558,43 @@ class SiameseTrainer:
         return self.history
     
     def evaluate(self, test_data, test_labels):
-        """Evaluate the trained model with real metrics"""
+        """Evaluate the trained model with real metrics (threshold=0.4 as in paper)"""
         print("Evaluating model with real metrics...")
         
         try:
             # Get the embedding model for evaluation
-            embedding_model = self.model.layers[2]  # The shared embedding model
+            if self.loss_type == 'contrastive':
+                embedding_model = self.model.layers[2]  # The shared embedding model
+            else:  # triplet
+                embedding_model = self.model.layers[3]  # The shared embedding model in triplet model
             
-            # Generate embeddings for test data
             print("Generating test embeddings...")
             test_embeddings = embedding_model.predict(test_data, verbose=0)
-            
-            # Create evaluation pairs
             print("Creating evaluation pairs...")
             eval_pairs, eval_labels = self.dataset.create_pairs(test_data, test_labels, num_pairs_per_image=1)
             
-            # Predict distances for evaluation pairs
-            print("Predicting distances...")
-            distances = self.model.predict([eval_pairs[:, 0], eval_pairs[:, 1]], verbose=0)
+            if self.loss_type == 'contrastive':
+                print("Predicting distances...")
+                distances = self.model.predict([eval_pairs[:, 0], eval_pairs[:, 1]], verbose=0)
+            else:  # triplet
+                print("Computing distances from embeddings...")
+                # Get embeddings for pairs
+                emb1 = embedding_model.predict(eval_pairs[:, 0], verbose=0)
+                emb2 = embedding_model.predict(eval_pairs[:, 1], verbose=0)
+                # Compute Euclidean distances
+                distances = np.sqrt(np.sum((emb1 - emb2) ** 2, axis=1))
             
-            # Convert distances to binary predictions (threshold-based)
-            threshold = 0.5  # Distance threshold for same/different
+            threshold = 0.4  # as in the paper
             predictions = (distances > threshold).astype(int)
-            
-            # Calculate metrics
             accuracy = accuracy_score(eval_labels, predictions)
-            precision = precision_score(eval_labels, predictions, average='weighted', zero_division=0)
-            recall = recall_score(eval_labels, predictions, average='weighted', zero_division=0)
-            f1 = f1_score(eval_labels, predictions, average='weighted', zero_division=0)
-            
+            precision = precision_score(eval_labels, predictions, average='weighted', zero_division='warn')
+            recall = recall_score(eval_labels, predictions, average='weighted', zero_division='warn')
+            f1 = f1_score(eval_labels, predictions, average='weighted', zero_division='warn')
             print(f"Real Evaluation Results:")
             print(f"  Accuracy: {accuracy:.4f}")
             print(f"  Precision: {precision:.4f}")
             print(f"  Recall: {recall:.4f}")
             print(f"  F1-Score: {f1:.4f}")
-            
             return {
                 'accuracy': accuracy,
                 'precision': precision,
@@ -601,12 +603,17 @@ class SiameseTrainer:
             }
         except Exception as e:
             print(f"Evaluation failed: {e}")
-            print("Falling back to basic metrics...")
-            
             # Fallback: basic accuracy calculation
             try:
-                # Simple distance-based evaluation
-                distances = self.model.predict([test_data[:100], test_data[100:200]], verbose=0)
+                if self.loss_type == 'contrastive':
+                    distances = self.model.predict([test_data[:100], test_data[100:200]], verbose=0)
+                else:
+                    # For triplet model, compute distances manually
+                    embedding_model = self.model.layers[3]
+                    emb1 = embedding_model.predict(test_data[:100], verbose=0)
+                    emb2 = embedding_model.predict(test_data[100:200], verbose=0)
+                    distances = np.sqrt(np.sum((emb1 - emb2) ** 2, axis=1))
+                
                 accuracy = np.mean(distances < 0.5)  # Simple threshold
                 return {
                     'accuracy': accuracy,
@@ -689,7 +696,8 @@ def main():
     images, labels = dataset.load_dataset(
         max_cats=MAX_CATS,
         min_images_per_cat=MIN_IMAGES_PER_CAT,
-        max_images_per_cat=MAX_IMAGES_PER_CAT
+        max_images_per_cat=MAX_IMAGES_PER_CAT,
+        augment=False
     )
     print(f"Dataset loaded successfully: {len(images)} images")
     
