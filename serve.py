@@ -313,7 +313,7 @@ def identify_cat():
         
         # Match against database
         result = match_embedding(embedding, db_embeddings, threshold=0.4)
-        
+
         # Add system information
         result['system_info'] = {
             'auto_registration_enabled': SYSTEM_CONFIG["auto_registration_enabled"],

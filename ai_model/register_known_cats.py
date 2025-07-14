@@ -56,7 +56,7 @@ def register_known_cats(dataset_path="post_processing", output_file="cat_embeddi
             continue
         
         print(f"Processing {cat_folder} with {len(image_files)} images")
-        
+                
         # Create embeddings for each image
         for img_file in image_files:
             img_path = os.path.join(cat_path, img_file)

@@ -48,6 +48,10 @@ const LoadingScreen = () => {
     }
   }, [action, imageUri]);
 
+  useEffect(() => {
+    console.log('Backend BASE_URL:', API_CONFIG.BASE_URL);
+  }, []);
+
   const performIdentification = async () => {
     try {
       // Step 1: Check backend status

@@ -3,7 +3,7 @@
 
 export const API_CONFIG = {
   // Backend server URL - update this to match your Mac's IP address
-  BASE_URL: 'http://192.168.40.138:5002', // Update this IP to your Mac's IP
+  BASE_URL: 'http://172.31.196.31:5002', // Updated to current Mac's IP
   
   // API endpoints
   ENDPOINTS: {
