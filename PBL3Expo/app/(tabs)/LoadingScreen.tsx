@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, Image, Alert, ActivityIndicator, Animated, Easing } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { API_CONFIG, getIdentifyUrl } from '../../config/api';
+import { API_CONFIG, getIdentifyUrl, handleApiError, checkBackendStatus } from '../../config/api';
 import { Loader, CheckCircle, XCircle } from 'lucide-react-native';
 
 const LoadingScreen = () => {
@@ -11,7 +11,7 @@ const LoadingScreen = () => {
   const action = params.action as string;
   
   const [loadingState, setLoadingState] = useState<'processing' | 'completed' | 'error'>('processing');
-  const [progressText, setProgressText] = useState('Analyzing cat image...');
+  const [progressText, setProgressText] = useState('Checking server connection...');
   const [result, setResult] = useState<any>(null);
 
   // Animation for Loader icon
@@ -38,7 +38,7 @@ const LoadingScreen = () => {
   // Reset state on navigation change (new image or action)
   useEffect(() => {
     setLoadingState('processing');
-    setProgressText('Analyzing cat image...');
+    setProgressText('Checking server connection...');
     setResult(null);
   }, [imageUri, action]);
 
@@ -50,15 +50,24 @@ const LoadingScreen = () => {
 
   const performIdentification = async () => {
     try {
+      // Step 1: Check backend status
+      setProgressText('Checking server connection...');
+      const backendAvailable = await checkBackendStatus();
+      if (!backendAvailable) {
+        throw new Error(API_CONFIG.ERROR_MESSAGES.NETWORK_ERROR);
+      }
+      
+      // Step 2: Upload and process
       setProgressText('Uploading image to server...');
       await new Promise(resolve => setTimeout(resolve, 1000));
       setProgressText('Detecting cat in image...');
       await new Promise(resolve => setTimeout(resolve, 1500));
-      setProgressText('Extracting features...');
+      setProgressText('Extracting features using AI model...');
       await new Promise(resolve => setTimeout(resolve, 1000));
       setProgressText('Matching against database...');
       await new Promise(resolve => setTimeout(resolve, 1500));
 
+      // Step 3: Send request to backend
       const formData = new FormData();
       formData.append('image', {
         uri: imageUri,
@@ -66,22 +75,30 @@ const LoadingScreen = () => {
         name: 'cat.jpg',
       } as any);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUT);
+
       const response = await fetch(getIdentifyUrl(), {
         method: 'POST',
         body: formData,
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        signal: controller.signal,
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const apiResult = await response.json();
       setResult(apiResult);
       setProgressText('Analysis complete!');
       setLoadingState('completed');
+      
       setTimeout(() => {
         router.replace({ 
           pathname: '/(tabs)/ResultScreen', 
@@ -91,13 +108,28 @@ const LoadingScreen = () => {
           } 
         });
       }, 2000);
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Identification error:', error);
-      setProgressText('Error occurred during analysis');
+      
+      // Handle specific error types
+      let errorMessage = handleApiError(error);
+      
+      if (error.name === 'AbortError') {
+        errorMessage = API_CONFIG.ERROR_MESSAGES.TIMEOUT_ERROR;
+      } else if (error.message?.includes('No cat detected')) {
+        errorMessage = API_CONFIG.ERROR_MESSAGES.NO_CAT_DETECTED;
+      } else if (error.message?.includes('No match found')) {
+        errorMessage = API_CONFIG.ERROR_MESSAGES.NO_MATCH_FOUND;
+      }
+      
+      setProgressText(errorMessage);
       setLoadingState('error');
+      
       setTimeout(() => {
-        Alert.alert('Error', 'Failed to connect to server. Please try again.');
-        router.back();
+        Alert.alert('Error', errorMessage, [
+          { text: 'OK', onPress: () => router.back() }
+        ]);
       }, 3000);
     }
   };
@@ -155,6 +187,7 @@ const LoadingScreen = () => {
           <View style={styles.errorContainer}>
             <XCircle size={64} color={getStatusColor()} style={{ marginBottom: 16 }} />
             <Text style={styles.errorMessage}>Something went wrong</Text>
+            <Text style={styles.errorDetails}>{progressText}</Text>
           </View>
         )}
         {loadingState === 'processing' && (
@@ -226,6 +259,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#ef4444',
+    marginBottom: 8,
+  },
+  errorDetails: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    maxWidth: 300,
   },
 });
 
