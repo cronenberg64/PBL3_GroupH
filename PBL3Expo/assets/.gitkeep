@@ -1,0 +1,1 @@
+// This file ensures the model directory exists in git. Place your ONNX model here as cat_identifier.onnx 

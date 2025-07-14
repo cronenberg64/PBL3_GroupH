@@ -1,0 +1,23 @@
+{
+  "model": {
+    "default_model": "best_siamese_contrastive.h5",
+    "embedding_dim": 256,
+    "img_size": 200,
+    "threshold": 0.5
+  },
+  "database": {
+    "path": "production/database/cat_database.pkl",
+    "backup_path": "production/database/backup/"
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "production/logs/app.log",
+    "max_size": "10MB",
+    "backup_count": 5
+  },
+  "performance": {
+    "batch_size": 1,
+    "max_workers": 4,
+    "timeout": 30
+  }
+}

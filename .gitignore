@@ -1,0 +1,105 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pkl
+*.h5
+*.hdf5
+*.pb
+*.ckpt
+*.log
+*.sqlite3
+*.db
+*.egg-info/
+.venv/
+venv/
+ENV/
+.env
+.env.*
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node.js
+node_modules/
+package-lock.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# VSCode
+.vscode/
+
+# Model and results
+*.pth
+*.pt
+*.onnx
+*.tflite
+*.pb
+*.ckpt
+*.weights
+*.npz
+*.npy
+# Exported SavedModel files (too large for GitHub)
+*_savedmodel/
+*.savedmodel
+# Large model archives
+*.tar.gz
+siamese_models.tar.gz
+
+# Images and media (ignore sample/uploaded images but keep training plots)
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.webp
+
+# Project-specific
+post_processing/
+cat_embeddings.pkl
+# Keep trained models and results for sharing
+!best_siamese_*.h5
+!training_history_*.png
+!dataset_analysis.png
+!dataset_analysis.csv
+!selected_cats_for_training.csv
+!siamese_training_results.csv
+results/
+models/
+logs/
+
+# System
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Others
+*.bak
+*.swp
+*.swo
+*~
+
+# Ignore temp upload and static files except for catWalking.gif
+/temp_upload.png
+/static/*
+!static/catWalking.gif
+
+# Ignore data logs and database
+/data/logs/
+/data/db.sqlite3
+
+# Ignore macOS system files everywhere
+**/.DS_Store
+
+# Ignore backup and test outputs
+*.backup
+
+# Python virtual environments
+.venv_tf216/
