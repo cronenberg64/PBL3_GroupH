@@ -46,6 +46,9 @@ yarn-error.log*
 *.weights
 *.npz
 *.npy
+# Exported SavedModel files (too large for GitHub)
+*_savedmodel/
+*.savedmodel
 
 # Images and media (ignore sample/uploaded images but keep training plots)
 *.jpg

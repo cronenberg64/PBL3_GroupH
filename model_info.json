@@ -1,0 +1,14 @@
+{
+  "model_type": "siamese_embedding",
+  "base_model": "vgg16",
+  "input_shape": [
+    150,
+    150,
+    3
+  ],
+  "embedding_dim": 128,
+  "image_size": 150,
+  "export_format": "savedmodel",
+  "framework": "tensorflow",
+  "version": "2.19.0"
+}
