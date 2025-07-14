@@ -62,12 +62,9 @@ def match_embedding(query_embedding, db_embeddings, threshold=0.4):
     is_match = min_dist < threshold
     
     # Calculate confidence based on distance (closer = higher confidence)
-    if is_match:
-        # Normalize distance to confidence (0-1 scale)
-        # Distance of 0 = 100% confidence, distance of threshold = 50% confidence
-        confidence = max(0.5, 1.0 - (min_dist / threshold))
-    else:
-        confidence = 0.0
+    confidence = max(0, 1.0 - (min_dist / threshold))
+
+    print(f"[Matcher] Closest distance: {min_dist:.4f}, Confidence: {confidence:.2f}, Match: {is_match}, Matched ID: {matched_id}")
 
     return {
         "match_found": is_match,

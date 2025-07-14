@@ -36,7 +36,7 @@ def register_known_cats(dataset_path="post_processing", output_file="cat_embeddi
         return []
     
     embeddings_db = []
-    cat_folders = [f for f in os.listdir(dataset_path) if f.startswith('cat_')]
+    cat_folders = [f for f in os.listdir(dataset_path) if os.path.isdir(os.path.join(dataset_path, f))]
     
     print(f"Found {len(cat_folders)} cat folders")
     

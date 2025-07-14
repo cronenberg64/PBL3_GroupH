@@ -1,14 +1,24 @@
 {
-  "model_type": "siamese_embedding",
-  "base_model": "vgg16",
-  "input_shape": [
-    150,
-    150,
-    3
-  ],
-  "embedding_dim": 128,
-  "image_size": 150,
-  "export_format": "savedmodel",
-  "framework": "tensorflow",
-  "version": "2.19.0"
+  "export_date": "2025-07-14T01:23:18",
+  "tensorflow_version": "2.19.0",
+  "keras_version": "3.10.0",
+  "models": {
+    "contrastive": {
+      "path": "best_siamese_contrastive_embedding_savedmodel",
+      "format": "SavedModel",
+      "endpoint": "serve"
+    },
+    "triplet": {
+      "path": "best_siamese_triplet_embedding_savedmodel",
+      "format": "SavedModel",
+      "endpoint": "serve"
+    }
+  },
+  "usage_instructions": {
+    "loading": "Use keras.layers.TFSMLayer(model_path, call_endpoint='serve')",
+    "input_shape": "(None, 150, 150, 3)",
+    "output_shape": "(None, 128)",
+    "input_dtype": "float32",
+    "output_dtype": "float32"
+  }
 }

@@ -382,8 +382,8 @@ def identify_cat():
 
 def render_result_page(result):
     # Extract values
-    match_found = result.get('match_found', False)
-    confidence = int(result.get('confidence', 0) * 100)
+    raw_confidence = result.get('confidence', 0)
+    confidence_pct = round(raw_confidence * 100, 1)
     matched_id = result.get('matched_id', None)
     error = result.get('error', None)
     guidance = result.get('guidance', {})
@@ -391,30 +391,45 @@ def render_result_page(result):
     model_info = result.get('model_info', {})
     system_info = result.get('system_info', {})
     medical_info = result.get('medical_info', None)
-    
-    status_color = '#10b981' if match_found else '#ef4444'
-    status_text = 'Match Found!' if match_found else 'No Match Found'
-    status_icon = '✔️' if match_found else '❌'
-    
+
+    # Determine display logic based on confidence
+    if raw_confidence < 0.6:
+        match_found = False
+        status_color = '#ef4444'
+        status_text = 'No Match Found'
+        status_icon = '❌'
+        cat_id_display = ''
+        extra_line = ''
+    else:
+        match_found = True
+        status_color = '#10b981'
+        status_text = 'Match Found!'
+        status_icon = '✔️'
+        cat_id_display = f'Cat ID: {matched_id}' if matched_id else ''
+        if raw_confidence >= 0.8:
+            extra_line = '<div style="color: #10b981; font-weight: bold; margin-bottom: 8px;">Very likely match</div>'
+        else:
+            extra_line = '<div style="color: #f59e0b; font-weight: bold; margin-bottom: 8px;">Possible match - needs confirmation</div>'
+
     # Progress bar for confidence
     progress_html = f'''
       <div style="width: 100%; background: #f3f4f6; border-radius: 8px; height: 24px; margin: 16px 0;">
-        <div style="width: {confidence}%; background: {status_color}; height: 100%; border-radius: 8px; transition: width 0.5s;"></div>
+        <div style="width: {confidence_pct}%; background: {status_color}; height: 100%; border-radius: 8px; transition: width 0.5s;"></div>
       </div>
-      <div style="text-align: center; color: {status_color}; font-weight: bold;">Confidence: {confidence}%</div>
+      <div style="text-align: center; color: {status_color}; font-weight: bold;">Confidence: {confidence_pct}%</div>
     '''
-    
+
     # Medical info HTML
     medical_html = ''
-    if medical_info:
+    if medical_info and match_found:
         medical_html = '<div style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 8px; color: #b45309; font-size: 1rem;">'
         for k, v in medical_info.items():
             medical_html += f'<div><b>{k.capitalize()}:</b> {v}</div>'
         medical_html += '</div>'
-    
+
     # Guidance HTML
     guidance_html = ''
-    if guidance:
+    if guidance and not match_found:
         guidance_html = f'''
         <div style="margin-top: 24px; padding: 16px; background: #fef2f2; border-radius: 8px; color: #b91c1c;">
           <b>{guidance.get('message', '')}</b><br/>
@@ -424,12 +439,12 @@ def render_result_page(result):
           <div style="margin-top: 8px; font-size: 0.95rem; color: #991b1b;">{guidance.get('contact_info', '')}</div>
         </div>
         '''
-    
+
     # Error HTML
     error_html = ''
     if error:
         error_html = f'<div style="margin-top: 24px; color: #ef4444; font-weight: bold;">{error}</div>'
-    
+
     return f'''
     <html>
     <head>
@@ -450,7 +465,8 @@ def render_result_page(result):
         <div class="status-icon">{status_icon}</div>
         <div class="status-text">{status_text}</div>
         {progress_html}
-        <div class="cat-id">{('Cat ID: ' + matched_id) if matched_id else ''}</div>
+        {extra_line if match_found else ''}
+        <div class="cat-id">{cat_id_display}</div>
         {medical_html}
         {guidance_html}
         {error_html}
