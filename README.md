@@ -17,7 +17,7 @@ Here is the Project's Documentation Website: [Project Documentation Website](htt
 This project uses high-quality cat re-identification datasets, originally scraped and organized for machine learning research:
 
 - **Kaggle Dataset:** [Cat Re-Identification Image Dataset](https://www.kaggle.com/datasets/cronenberg64/cat-re-identification-image-dataset)
-- **HeelLostStreetCat Dataset:** [HeelLostStreetCat Individuals Dataset](https://www.kaggle.com/datasets/tobiastrein/heellostreetcat-individuals?select=001-brother-valentine)
+- **HelloStreetCat Dataset:** [HelloStreetCat Individuals Dataset](https://www.kaggle.com/datasets/tobiastrein/heellostreetcat-individuals?select=001-brother-valentine)
 - **Scraping Toolkit:** [WebScrape_neko-jirushi GitHub Repository](https://github.com/cronenberg64/WebScrape_neko-jirushi)
 
 ---
