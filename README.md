@@ -18,7 +18,7 @@ Below are a few key images from the project repository. They are included here t
 
 - Mobile preview: mobile-app_preview.jpg
 
-  ![Mobile app preview](mobile-app_preview.jpg)
+  <img src="mobile-app_preview.jpg" alt="Mobile app preview" width="480" style="max-width:100%;height:auto;" />
 
   A screenshot mockup of the Expo/React Native mobile app used by volunteers. The preview shows the main identification flow: capture or upload an image, run the identification, and display the match result with confidence. This image helps reviewers understand the mobile UX and how the backend re-ID results surface to users.
 
