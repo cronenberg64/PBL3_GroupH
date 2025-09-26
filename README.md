@@ -12,6 +12,28 @@ A mobile application built with React Native and integrated with an image-based 
 
 Here is the Project's Documentation Website: [Project Documentation Website](https://xknt21.github.io/)
 
+## Figures
+
+Below are a few key images from the project repository. They are included here to make it easier to understand the mobile experience and the model outputs.
+
+- Mobile preview: mobile-app_preview.jpg
+
+  ![Mobile app preview](mobile-app_preview.jpg)
+
+  A screenshot mockup of the Expo/React Native mobile app used by volunteers. The preview shows the main identification flow: capture or upload an image, run the identification, and display the match result with confidence. This image helps reviewers understand the mobile UX and how the backend re-ID results surface to users.
+
+- Figure 1: Figure_1.png
+
+  ![Figure 1](Figure_1.png)
+
+  Training and evaluation curves for the contrastive Siamese model (accuracy and loss over epochs). This figure illustrates training stability and the validation performance used to pick the final model checkpoint.
+
+- Figure 2: Figure_2.png
+
+  ![Figure 2](Figure_2.png)
+
+  Visualization of dataset composition and distribution (images per class / cat). This helps explain why certain classes may be under-represented and informs future data collection priorities.
+
 ## Dataset Source
 
 This project uses high-quality cat re-identification datasets, originally scraped and organized for machine learning research:

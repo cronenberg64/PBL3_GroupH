@@ -54,12 +54,15 @@ yarn-error.log*
 siamese_models.tar.gz
 
 # Images and media (ignore sample/uploaded images but keep training plots)
+# By default we ignore common image formats to avoid checking in photos or large media.
 *.jpg
 *.jpeg
 *.gif
 *.bmp
 *.tiff
 *.webp
+# Exception: allow the mobile app preview image to be tracked in the repository
+!mobile-app_preview.jpg
 
 # Project-specific
 post_processing/
